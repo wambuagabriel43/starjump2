@@ -1,0 +1,296 @@
+import React from 'react';
+import { Calendar, User, Tag, ArrowRight, Clock } from 'lucide-react';
+
+const Blog: React.FC = () => {
+  const blogPosts = [
+    {
+      id: 1,
+      title: 'Planning the Perfect Children\'s Birthday Party in Nairobi',
+      excerpt: 'Discover expert tips for organizing an unforgettable birthday celebration that will have kids talking for weeks. From choosing the right venue to selecting age-appropriate activities.',
+      content: 'Planning a children\'s birthday party can be both exciting and overwhelming. Here are our top tips for creating magical memories...',
+      author: 'Sarah Wanjiku',
+      date: '2024-11-15',
+      readTime: '5 min read',
+      category: 'Parenting Tips',
+      image: 'https://images.pexels.com/photos/1619654/pexels-photo-1619654.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&dpr=1',
+      featured: true,
+      tags: ['Birthday Parties', 'Planning', 'Kids Events']
+    },
+    {
+      id: 2,
+      title: 'Safety First: Our Equipment Standards and Protocols',
+      excerpt: 'Learn about Star Jump\'s comprehensive safety measures and how we ensure every piece of equipment meets international standards for child safety.',
+      content: 'At Star Jump, safety is our top priority. Every piece of equipment undergoes rigorous testing...',
+      author: 'David Kimani',
+      date: '2024-11-10',
+      readTime: '7 min read',
+      category: 'Safety',
+      image: 'https://images.pexels.com/photos/1104014/pexels-photo-1104014.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&dpr=1',
+      featured: true,
+      tags: ['Safety', 'Equipment', 'Standards']
+    },
+    {
+      id: 3,
+      title: 'Corporate Events: Building Team Spirit Through Play',
+      excerpt: 'Explore how incorporating play elements into corporate events can boost team morale, improve communication, and create lasting bonds among colleagues.',
+      content: 'Corporate events don\'t have to be boring. Discover how play can transform your next company gathering...',
+      author: 'Grace Achieng',
+      date: '2024-11-05',
+      readTime: '6 min read',
+      category: 'Corporate',
+      image: 'https://images.pexels.com/photos/1292294/pexels-photo-1292294.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&dpr=1',
+      featured: false,
+      tags: ['Corporate Events', 'Team Building', 'Business']
+    },
+    {
+      id: 4,
+      title: 'The Psychology of Play: Why Fun Matters for Child Development',
+      excerpt: 'Understanding the crucial role of play in children\'s cognitive, social, and emotional development, and how quality play equipment supports healthy growth.',
+      content: 'Play is not just fun - it\'s fundamental to healthy child development. Research shows...',
+      author: 'Dr. Mary Njeri',
+      date: '2024-10-28',
+      readTime: '8 min read',
+      category: 'Parenting Tips',
+      image: 'https://images.pexels.com/photos/1619654/pexels-photo-1619654.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&dpr=1',
+      featured: false,
+      tags: ['Child Development', 'Psychology', 'Education']
+    },
+    {
+      id: 5,
+      title: 'Star Jump Partners with Local Schools for Educational Fun',
+      excerpt: 'Announcing our new partnership program with Nairobi schools to provide educational play experiences that combine learning with physical activity.',
+      content: 'We\'re excited to announce our new educational partnership program...',
+      author: 'Sarah Wanjiku',
+      date: '2024-10-20',
+      readTime: '4 min read',
+      category: 'Partnerships',
+      image: 'https://images.pexels.com/photos/1104014/pexels-photo-1104014.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&dpr=1',
+      featured: false,
+      tags: ['Partnerships', 'Education', 'Schools']
+    },
+    {
+      id: 6,
+      title: 'Seasonal Event Ideas: Making the Most of Kenya\'s Weather',
+      excerpt: 'Creative ideas for outdoor and indoor events throughout Kenya\'s seasons, including rainy season alternatives and dry season spectacular celebrations.',
+      content: 'Kenya\'s diverse climate offers unique opportunities for different types of events...',
+      author: 'David Kimani',
+      date: '2024-10-15',
+      readTime: '6 min read',
+      category: 'Events',
+      image: 'https://images.pexels.com/photos/1292294/pexels-photo-1292294.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&dpr=1',
+      featured: false,
+      tags: ['Seasonal Events', 'Weather', 'Planning']
+    }
+  ];
+
+  const categories = ['All', 'Parenting Tips', 'Events', 'Safety', 'Corporate', 'Partnerships'];
+  const [selectedCategory, setSelectedCategory] = React.useState('All');
+
+  const filteredPosts = selectedCategory === 'All' 
+    ? blogPosts 
+    : blogPosts.filter(post => post.category === selectedCategory);
+
+  const featuredPosts = blogPosts.filter(post => post.featured);
+  const latestPosts = blogPosts.slice(0, 3);
+
+  return (
+    <div className="min-h-screen">
+      {/* Hero Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-10 left-10 w-32 h-20 bg-white/10 rounded-full animate-float"></div>
+          <div className="absolute top-20 right-20 w-24 h-16 bg-star-yellow/20 rounded-full animate-float" style={{ animationDelay: '1s' }}></div>
+          <div className="absolute bottom-10 left-1/4 w-28 h-18 bg-fun-pink/15 rounded-full animate-float" style={{ animationDelay: '2s' }}></div>
+        </div>
+
+        <div className="max-w-6xl mx-auto text-center relative">
+          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 drop-shadow-lg">
+            Star Jump <span className="text-star-yellow">Blog</span>
+          </h1>
+          <p className="text-xl md:text-2xl text-white/95 max-w-4xl mx-auto leading-relaxed">
+            Insights, tips, and stories from Kenya's leading children's entertainment experts
+          </p>
+        </div>
+      </section>
+
+      {/* Featured Posts */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 drop-shadow-lg">
+              Featured <span className="text-star-yellow">Articles</span>
+            </h2>
+            <p className="text-xl text-white/90 max-w-3xl mx-auto">
+              Our most popular and insightful posts
+            </p>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-8 mb-16">
+            {featuredPosts.map((post) => (
+              <article
+                key={post.id}
+                className="bg-white rounded-3xl shadow-2xl overflow-hidden transform hover:scale-105 transition-all duration-300 hover:shadow-3xl"
+              >
+                <div className="relative h-64 overflow-hidden">
+                  <img
+                    src={post.image}
+                    alt={post.title}
+                    className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
+                  />
+                  <div className="absolute top-4 left-4 bg-star-yellow text-royal-blue px-4 py-2 rounded-full font-bold text-sm">
+                    Featured
+                  </div>
+                  <div className="absolute top-4 right-4 bg-white/90 text-royal-blue px-3 py-1 rounded-full font-bold text-sm">
+                    {post.category}
+                  </div>
+                </div>
+
+                <div className="p-8">
+                  <div className="flex items-center space-x-4 mb-4 text-sm text-gray-600">
+                    <div className="flex items-center">
+                      <User className="h-4 w-4 mr-1" />
+                      {post.author}
+                    </div>
+                    <div className="flex items-center">
+                      <Calendar className="h-4 w-4 mr-1" />
+                      {new Date(post.date).toLocaleDateString()}
+                    </div>
+                    <div className="flex items-center">
+                      <Clock className="h-4 w-4 mr-1" />
+                      {post.readTime}
+                    </div>
+                  </div>
+
+                  <h3 className="text-2xl font-bold text-royal-blue mb-4 hover:text-bright-orange transition-colors duration-300">
+                    {post.title}
+                  </h3>
+
+                  <p className="text-gray-700 mb-6 leading-relaxed">
+                    {post.excerpt}
+                  </p>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-wrap gap-2">
+                      {post.tags.slice(0, 2).map((tag, index) => (
+                        <span
+                          key={index}
+                          className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                    <button className="bg-gradient-to-r from-royal-blue to-blue-600 text-white font-bold py-2 px-6 rounded-full hover:from-blue-600 hover:to-royal-blue transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center space-x-2">
+                      <span>Read More</span>
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Category Filter */}
+      <section className="py-8 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-wrap justify-center gap-3 mb-8">
+            {categories.map((category) => (
+              <button
+                key={category}
+                onClick={() => setSelectedCategory(category)}
+                className={`px-6 py-3 rounded-full font-bold transition-all duration-300 transform hover:scale-105 ${
+                  selectedCategory === category
+                    ? 'bg-star-yellow text-royal-blue shadow-lg'
+                    : 'bg-white text-royal-blue hover:bg-star-yellow hover:text-royal-blue shadow-md'
+                }`}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* All Posts */}
+      <section className="py-8 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredPosts.map((post) => (
+              <article
+                key={post.id}
+                className="bg-white rounded-3xl shadow-2xl overflow-hidden transform hover:scale-105 transition-all duration-300 hover:shadow-3xl"
+              >
+                <div className="relative h-48 overflow-hidden">
+                  <img
+                    src={post.image}
+                    alt={post.title}
+                    className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
+                  />
+                  <div className="absolute top-4 right-4 bg-royal-blue text-white px-3 py-1 rounded-full font-bold text-sm">
+                    {post.category}
+                  </div>
+                </div>
+
+                <div className="p-6">
+                  <div className="flex items-center space-x-3 mb-3 text-xs text-gray-600">
+                    <div className="flex items-center">
+                      <User className="h-3 w-3 mr-1" />
+                      {post.author}
+                    </div>
+                    <div className="flex items-center">
+                      <Calendar className="h-3 w-3 mr-1" />
+                      {new Date(post.date).toLocaleDateString()}
+                    </div>
+                  </div>
+
+                  <h3 className="text-lg font-bold text-royal-blue mb-3 hover:text-bright-orange transition-colors duration-300 line-clamp-2">
+                    {post.title}
+                  </h3>
+
+                  <p className="text-gray-700 text-sm mb-4 leading-relaxed line-clamp-3">
+                    {post.excerpt}
+                  </p>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500">{post.readTime}</span>
+                    <button className="bg-gradient-to-r from-bright-orange to-fun-pink text-white font-bold py-2 px-4 rounded-full hover:from-fun-pink hover:to-bright-orange transition-all duration-300 transform hover:scale-105 shadow-lg text-sm">
+                      Read More
+                    </button>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Newsletter Signup */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto text-center">
+          <div className="bg-gradient-to-br from-white to-gray-50 rounded-3xl p-12 shadow-2xl">
+            <h2 className="text-4xl font-bold text-royal-blue mb-6">
+              Stay Updated!
+            </h2>
+            <p className="text-xl text-gray-700 mb-8 leading-relaxed">
+              Subscribe to our newsletter for the latest tips, event updates, and exclusive offers from Star Jump Kenya.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
+              <input
+                type="email"
+                placeholder="Enter your email"
+                className="flex-1 px-6 py-3 border-2 border-gray-200 rounded-full focus:border-royal-blue focus:ring-2 focus:ring-royal-blue/20 transition-colors duration-300 outline-none"
+              />
+              <button className="bg-gradient-to-r from-royal-blue to-blue-600 text-white font-bold px-8 py-3 rounded-full hover:from-blue-600 hover:to-royal-blue transition-all duration-300 transform hover:scale-105 shadow-lg">
+                Subscribe
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+};
+
+export default Blog;
