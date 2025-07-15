@@ -16,6 +16,7 @@ const Header: React.FC = () => {
 
   // Filter active menu items and sort by order
   const activeMenuItems = menuItems.filter(item => item.active).sort((a, b) => a.order_position - b.order_position);
+  return (
     <header className="relative z-50">
       {/* Floating cloud decorations */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
