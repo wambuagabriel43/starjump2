@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, X, Star, Settings } from 'lucide-react';
-import { useSiteAssets } from '../hooks/useSupabaseData';
+import { useSiteAssets, useMenuItems } from '../hooks/useSupabaseData';
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { assets } = useSiteAssets();
+  const { menuItems } = useMenuItems();
   
   // Get header logo
   const headerLogo = assets.find(asset => 
@@ -13,18 +14,8 @@ const Header: React.FC = () => {
     (asset.placement_hint === 'header' || !asset.placement_hint)
   );
 
-  const navigation = [
-    { name: 'Home', href: '/', color: 'bg-star-yellow' },
-    { name: 'About Us', href: '/about', color: 'bg-grass-green' },
-    { name: 'Corporate', href: '/corporate', color: 'bg-bright-orange' },
-    { name: 'Events', href: '/events', color: 'bg-fun-pink' },
-    { name: 'Book Fun Space', href: '/booking', color: 'bg-red-500' },
-    { name: 'Shop', href: '/shop', color: 'bg-purple-500' },
-    { name: 'Blog', href: '/blog', color: 'bg-cyan-400' },
-    { name: 'Contact Us', href: '/contact', color: 'bg-lime-400' },
-  ];
-
-  return (
+  // Filter active menu items and sort by order
+  const activeMenuItems = menuItems.filter(item => item.active).sort((a, b) => a.order_position - b.order_position);
     <header className="relative z-50">
       {/* Floating cloud decorations */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -57,14 +48,15 @@ const Header: React.FC = () => {
 
             {/* Desktop Navigation with Colorful Clouds */}
             <div className="hidden lg:flex items-center space-x-2">
-              {navigation.map((item) => (
-                <div key={item.name} className="relative">
-                  <div className={`absolute inset-0 ${item.color} rounded-full transform scale-110 opacity-80 menu-${item.name.toLowerCase().replace(/\s+/g, '-')}`}></div>
+              {activeMenuItems.map((item) => (
+                <div key={item.id} className="relative">
+                  <div className={`absolute inset-0 bg-star-yellow rounded-full transform scale-110 opacity-80 menu-${item.label.toLowerCase().replace(/\s+/g, '-')}`}></div>
                   <Link
-                    to={item.href}
+                    to={item.url}
+                    target={item.target}
                     className="relative px-4 py-2 rounded-full text-themed font-bold text-sm hover:text-royal-blue transition-all duration-300 transform hover:scale-105 z-10"
                   >
-                    {item.name}
+                    {item.label}
                   </Link>
                 </div>
               ))}
@@ -108,14 +100,15 @@ const Header: React.FC = () => {
         {isMenuOpen && (
           <div className="lg:hidden absolute top-full left-0 right-0 bg-white shadow-xl border-t-4 border-star-yellow">
             <div className="px-4 py-2 space-y-1">
-              {navigation.map((item) => (
+              {activeMenuItems.map((item) => (
                 <Link
-                  key={item.name}
-                  to={item.href}
+                  key={item.id}
+                  to={item.url}
+                  target={item.target}
                   className="block px-4 py-3 rounded-lg text-royal-blue font-medium hover:bg-royal-blue hover:text-white transition-colors duration-300"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  {item.name}
+                  {item.label}
                 </Link>
               ))}
               {/* Mobile Admin Link in Menu */}

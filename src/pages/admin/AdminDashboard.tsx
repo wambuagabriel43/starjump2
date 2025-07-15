@@ -25,6 +25,8 @@ import SupabaseEventsManager from './SupabaseEventsManager';
 import SupabaseProductsManager from './SupabaseProductsManager';
 import SiteCustomizationManager from './SiteCustomizationManager';
 import DiagnosticPage from './DiagnosticPage';
+import NavigationManager from './NavigationManager';
+import PageManager from './PageManager';
 
 const AdminDashboard: React.FC = () => {
   const { logout } = useAuth();
@@ -34,12 +36,12 @@ const AdminDashboard: React.FC = () => {
   const navigation = [
     { name: 'Dashboard', href: '/admin', icon: Home },
     { name: 'Diagnostics', href: '/admin/diagnostics', icon: Database },
+    { name: 'Navigation', href: '/admin/navigation', icon: Menu },
+    { name: 'Page Manager', href: '/admin/pages', icon: FileText },
     { name: 'Site Customization', href: '/admin/customization', icon: Palette },
-    { name: 'Image Slider', href: '/admin/slider', icon: Image },
-    { name: 'Events (Local)', href: '/admin/events', icon: Calendar },
     { name: 'Events (Supabase)', href: '/admin/supabase-events', icon: Database },
-    { name: 'Products (Local)', href: '/admin/products', icon: ShoppingCart },
     { name: 'Products (Supabase)', href: '/admin/supabase-products', icon: Database },
+    { name: 'Image Slider', href: '/admin/slider', icon: Image },
     { name: 'Info Section', href: '/admin/info', icon: Info },
     { name: 'Booking CTA', href: '/admin/booking-cta', icon: MessageSquare },
   ];
@@ -144,11 +146,11 @@ const AdminDashboard: React.FC = () => {
           <Routes>
             <Route path="/" element={<DashboardHome />} />
             <Route path="/diagnostics" element={<DiagnosticPage />} />
+            <Route path="/navigation" element={<NavigationManager />} />
+            <Route path="/pages" element={<PageManager />} />
             <Route path="/customization" element={<SiteCustomizationManager />} />
             <Route path="/slider" element={<SliderManager />} />
-            <Route path="/events" element={<EventsManager />} />
             <Route path="/supabase-events" element={<SupabaseEventsManager />} />
-            <Route path="/products" element={<ProductsManager />} />
             <Route path="/supabase-products" element={<SupabaseProductsManager />} />
             <Route path="/info" element={<InfoSectionManager />} />
             <Route path="/booking-cta" element={<BookingCTAManager />} />

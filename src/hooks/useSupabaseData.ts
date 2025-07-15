@@ -182,3 +182,31 @@ export const useSiteSettings = () => {
 
   return { settings, loading, error, refetch: () => window.location.reload() }
 }
+
+export const useMenuItems = () => {
+  const [menuItems, setMenuItems] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchMenuItems = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('menu_items')
+          .select('*')
+          .order('order_position', { ascending: true })
+
+        if (error) throw error
+        setMenuItems(data || [])
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchMenuItems()
+  }, [])
+
+  return { menuItems, loading, error, refetch: () => window.location.reload() }
+}
