@@ -159,11 +159,14 @@ export const usePageContent = (pageSlug: string, sectionKey?: string) => {
           .from('page_content')
           .select('id')
           .eq('page_slug', pageSlug)
-          .single()
+          .maybeSingle()
 
         if (pageError) {
           debugLog('Error fetching page data:', pageError);
-          throw pageError
+          // If it's just a missing page, that's okay - we'll return empty content
+          if (pageError.code !== 'PGRST116') {
+            throw pageError
+          }
         }
 
         if (!pageData) {
