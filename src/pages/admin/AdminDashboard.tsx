@@ -28,6 +28,7 @@ import DiagnosticPage from './DiagnosticPage';
 import NavigationManager from './NavigationManager';
 import PageManager from './PageManager';
 import ContentManager from './ContentManager';
+import PageContentManager from './PageContentManager';
 import { FileText } from 'lucide-react';
 
 const AdminDashboard: React.FC = () => {
@@ -40,7 +41,7 @@ const AdminDashboard: React.FC = () => {
     { name: 'Diagnostics', href: '/admin/diagnostics', icon: Database },
     { name: 'Navigation', href: '/admin/navigation', icon: Menu },
     { name: 'Page Manager', href: '/admin/pages', icon: FileText },
-    { name: 'Content Manager', href: '/admin/content', icon: FileText },
+    { name: 'Page Content', href: '/admin/page-content', icon: FileText },
     { name: 'Site Customization', href: '/admin/customization', icon: Palette },
     { name: 'Events (Supabase)', href: '/admin/supabase-events', icon: Database },
     { name: 'Products (Supabase)', href: '/admin/supabase-products', icon: Database },
@@ -151,7 +152,7 @@ const AdminDashboard: React.FC = () => {
             <Route path="/diagnostics" element={<DiagnosticPage />} />
             <Route path="/navigation" element={<NavigationManager />} />
             <Route path="/pages" element={<PageManager />} />
-            <Route path="/content" element={<ContentManager />} />
+            <Route path="/page-content" element={<PageContentManager />} />
             <Route path="/customization" element={<SiteCustomizationManager />} />
             <Route path="/slider" element={<SliderManager />} />
             <Route path="/supabase-events" element={<SupabaseEventsManager />} />

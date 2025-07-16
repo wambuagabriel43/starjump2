@@ -1,23 +1,19 @@
 import React from 'react';
 import { Calendar, MapPin, Clock, Users, Star } from 'lucide-react';
 import { useEvents } from '../hooks/useSupabaseData';
-import { usePageContent, useStaticEvents } from '../hooks/useContentData';
+import { usePageContent, getContentBySection } from '../hooks/usePageContent';
 
 const Events: React.FC = () => {
   const { events, loading, error } = useEvents();
   const { content: pageContent, loading: contentLoading } = usePageContent('events');
-  const { events: staticEvents, loading: staticLoading } = useStaticEvents();
 
   // Get page content sections
-  const heroContent = pageContent.find(c => c.section_key === 'hero');
-  const featuredSectionContent = pageContent.find(c => c.section_key === 'featured_section');
-  const allEventsSectionContent = pageContent.find(c => c.section_key === 'all_events_section');
-  const ctaSectionContent = pageContent.find(c => c.section_key === 'cta_section');
+  const heroContent = getContentBySection(pageContent, 'hero');
+  const featuredSectionContent = getContentBySection(pageContent, 'featured_section');
+  const allEventsSectionContent = getContentBySection(pageContent, 'all_events_section');
+  const ctaSectionContent = getContentBySection(pageContent, 'cta_section');
 
-  // Get featured static events
-  const featuredEvents = staticEvents.filter(event => event.featured);
-
-  if (loading || contentLoading || staticLoading) {
+  if (loading || contentLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">

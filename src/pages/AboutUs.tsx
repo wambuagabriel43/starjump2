@@ -1,6 +1,6 @@
 import React from 'react';
 import { Star, Heart, Users, Award, Target, Eye } from 'lucide-react';
-import { usePageContent, renderContentByType } from '../hooks/useContentData';
+import { usePageContent, getContentBySection, renderContentByType } from '../hooks/usePageContent';
 
 const AboutUs: React.FC = () => {
   const { content: pageContent, loading, error } = usePageContent('about');
@@ -15,7 +15,7 @@ const AboutUs: React.FC = () => {
 
   // Get content sections with database-first approach
   const getContentSection = (sectionKey: string, fallback: any = {}) => {
-    const dbContent = pageContent.find(c => c.section_key === sectionKey);
+    const dbContent = getContentBySection(pageContent, sectionKey);
     if (dbContent) {
       console.log(`[AboutUs] Using database content for ${sectionKey}:`, dbContent.title);
       return renderContentByType(dbContent);

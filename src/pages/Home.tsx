@@ -1,5 +1,5 @@
 import React from 'react';
-import { usePageContent, getPageContentBySection } from '../hooks/useContentData';
+import { usePageContent } from '../hooks/usePageContent';
 import ImageSlider from '../components/ImageSlider';
 import UpcomingEvents from '../components/UpcomingEvents';
 import InfoSection from '../components/InfoSection';
