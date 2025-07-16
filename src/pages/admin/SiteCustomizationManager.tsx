@@ -631,6 +631,7 @@ const SiteCustomizationManager: React.FC = () => {
           {menuItems.map((menuItem) => (
             <div key={menuItem} className="space-y-2">
               <h3 className="text-sm font-semibold text-gray-800">{menuItem}</h3>
+              <p className="text-xs text-gray-500">Class: menu-{menuItem.toLowerCase().replace(/\s+/g, '-')}</p>
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
                 <input
                   type="file"

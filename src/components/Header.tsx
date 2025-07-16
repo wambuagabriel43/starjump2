@@ -21,28 +21,40 @@ const Header: React.FC = () => {
     .sort((a, b) => a.order_position - b.order_position);
 
   const isGraphicsMode = settings.menu_navigation_mode === 'graphics';
+  const graphicsSize = parseInt(settings.menu_graphics_size) || 60;
+  
+  // Get menu graphics assets
+  const menuGraphics = assets.filter(asset => 
+    asset.asset_type === 'menu_graphic' && asset.active
+  );
 
-  // Generate menu graphics CSS
-  const menuGraphicsCSS = assets
-    .filter(asset => asset.asset_type === 'menu_graphic' && asset.active)
-    .map((asset) => {
-      if (!asset.menu_item) return '';
-      const menuClass = asset.menu_item.toLowerCase().replace(/\s+/g, '-');
-      const graphicsSize = settings.menu_graphics_size || 60;
-      const isGraphicsMode = settings.menu_navigation_mode === 'graphics';
-      
-      return `
-        .menu-${menuClass} {
-          background-image: url('${asset.image_url}');
-          background-size: ${graphicsSize}px ${graphicsSize}px;
-          background-position: center;
-          background-repeat: no-repeat;
-          width: ${graphicsSize}px;
-          height: ${graphicsSize}px;
-          ${isGraphicsMode ? 'border-radius: 8px;' : ''}
-        }
-      `;
-    }).join('\n');
+  // Generate menu graphics CSS with better debugging
+  const menuGraphicsCSS = menuGraphics.map((asset) => {
+    if (!asset.menu_item) {
+      console.warn('Menu graphic missing menu_item:', asset);
+      return '';
+    }
+    const menuClass = asset.menu_item.toLowerCase().replace(/\s+/g, '-');
+    console.log('Generating CSS for menu item:', asset.menu_item, 'class:', menuClass, 'url:', asset.image_url);
+    
+    return `
+      .menu-${menuClass} {
+        background-image: url('${asset.image_url}') !important;
+        background-size: contain !important;
+        background-position: center !important;
+        background-repeat: no-repeat !important;
+        width: ${graphicsSize}px !important;
+        height: ${graphicsSize}px !important;
+        display: inline-block !important;
+        border-radius: 8px !important;
+        transition: all 0.3s ease !important;
+      }
+      .menu-${menuClass}:hover {
+        transform: scale(1.1) !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
+      }
+    `;
+  }).join('\n');
 
   // Show loading state
   if (assetsLoading || menuLoading || settingsLoading) {
@@ -115,22 +127,40 @@ const Header: React.FC = () => {
                 {activeMenuItems.length > 0 ? (
                   activeMenuItems.map((item) => {
                     const menuClass = `menu-${item.label.toLowerCase().replace(/\s+/g, '-')}`;
-                    const hasGraphic = assets.some(asset => 
+                    const hasGraphic = menuGraphics.some(asset => 
                       asset.asset_type === 'menu_graphic' && 
                       asset.menu_item === item.label && 
                       asset.active
                     );
                     
+                    console.log('Menu item:', item.label, 'hasGraphic:', hasGraphic, 'isGraphicsMode:', isGraphicsMode);
+                    
                     return (
                       <div key={item.id} className="relative">
                         {isGraphicsMode && hasGraphic ? (
+                          // Graphics Only Mode
                           <Link
                             to={item.url}
                             target={item.target || '_self'}
-                            className={`${menuClass} hover:opacity-80 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl`}
+                            className={`${menuClass} block`}
                             title={item.label}
-                          />
+                          >
+                            {/* Invisible text for accessibility */}
+                            <span className="sr-only">{item.label}</span>
+                          </Link>
+                        ) : isGraphicsMode && !hasGraphic ? (
+                          // Graphics mode but no graphic available - show placeholder
+                          <Link
+                            to={item.url}
+                            target={item.target || '_self'}
+                            className="block bg-gray-300 text-gray-600 font-bold text-xs rounded-lg flex items-center justify-center transition-all duration-300 hover:bg-gray-400"
+                            style={{ width: `${graphicsSize}px`, height: `${graphicsSize}px` }}
+                            title={item.label}
+                          >
+                            {item.label.charAt(0)}
+                          </Link>
                         ) : (
+                          // Text Navigation Mode
                           <>
                             <div className={`absolute inset-0 bg-star-yellow rounded-full transform scale-110 opacity-80 ${hasGraphic ? menuClass : ''}`}></div>
                             <Link
@@ -213,15 +243,31 @@ const Header: React.FC = () => {
               <div className="px-4 py-2 space-y-1">
                 {activeMenuItems.length > 0 ? (
                   activeMenuItems.map((item) => (
-                    <Link
-                      key={item.id}
-                      to={item.url}
-                      target={item.target || '_self'}
-                      className="block px-4 py-3 rounded-lg text-royal-blue font-medium hover:bg-royal-blue hover:text-white transition-colors duration-300"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      {item.label}
-                    </Link>
+                    <div key={item.id}>
+                      {isGraphicsMode ? (
+                        <Link
+                          to={item.url}
+                          target={item.target || '_self'}
+                          className="flex items-center px-4 py-3 rounded-lg text-royal-blue font-medium hover:bg-royal-blue hover:text-white transition-colors duration-300"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          <div 
+                            className={`menu-${item.label.toLowerCase().replace(/\s+/g, '-')} mr-3`}
+                            style={{ width: '24px', height: '24px', backgroundSize: 'contain' }}
+                          />
+                          {item.label}
+                        </Link>
+                      ) : (
+                        <Link
+                          to={item.url}
+                          target={item.target || '_self'}
+                          className="block px-4 py-3 rounded-lg text-royal-blue font-medium hover:bg-royal-blue hover:text-white transition-colors duration-300"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          {item.label}
+                        </Link>
+                      )}
+                    </div>
                   ))
                 ) : (
                   // Fallback mobile navigation
