@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 
 export interface PageContentBlock {
   id: string
+  page_slug?: string
   section_key: string
   content_type: string
   title?: string
@@ -19,7 +20,7 @@ export interface PageContentBlock {
   updated_at: string
 }
 
-// Hook for page-specific content using dedicated tables
+// Hook for page-specific content using dedicated tables (home_content, about_content, etc.)
 export const usePageContent = (pageSlug: string) => {
   const [content, setContent] = useState<PageContentBlock[]>([])
   const [loading, setLoading] = useState(true)
@@ -55,6 +56,13 @@ export const usePageContent = (pageSlug: string) => {
 
         if (error) {
           console.error(`Error fetching ${pageSlug} content:`, error)
+          // If table doesn't exist, return empty content instead of throwing
+          if (error.code === '42P01') {
+            console.warn(`Table ${tableName} does not exist, using empty content`)
+            setContent([])
+            setLoading(false)
+            return
+          }
           throw error
         }
         
@@ -62,7 +70,11 @@ export const usePageContent = (pageSlug: string) => {
         setContent(data || [])
       } catch (err) {
         console.error(`Exception fetching ${pageSlug} content:`, err)
-        setError(err instanceof Error ? err.message : 'An error occurred')
+        if (err instanceof TypeError && err.message.includes('Failed to fetch')) {
+          setError('Unable to connect to database. Please check your internet connection.')
+        } else {
+          setError(err instanceof Error ? err.message : 'An error occurred')
+        }
         setContent([])
       } finally {
         setLoading(false)
@@ -74,10 +86,9 @@ export const usePageContent = (pageSlug: string) => {
 
   const refetch = () => {
     console.log(`[usePageContent] Manual refetch triggered for ${pageSlug}`)
-    setLoading(true)
-    setError(null)
-    // Re-trigger the effect
     const fetchContent = async () => {
+      setLoading(true)
+      setError(null)
       try {
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
         const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -96,10 +107,22 @@ export const usePageContent = (pageSlug: string) => {
           .eq('active', true)
           .order('order_position', { ascending: true })
 
-        if (error) throw error
+        if (error) {
+          if (error.code === '42P01') {
+            console.warn(`Table ${tableName} does not exist, using empty content`)
+            setContent([])
+            setLoading(false)
+            return
+          }
+          throw error
+        }
         setContent(data || [])
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred')
+        if (err instanceof TypeError && err.message.includes('Failed to fetch')) {
+          setError('Unable to connect to database. Please check your internet connection.')
+        } else {
+          setError(err instanceof Error ? err.message : 'An error occurred')
+        }
         setContent([])
       } finally {
         setLoading(false)
@@ -129,5 +152,35 @@ export const renderContentByType = (content: PageContentBlock | null) => {
     button_text: content.button_text || '',
     button_link: content.button_link || '',
     metadata: content.metadata || {}
+  }
+}
+
+// Helper function to get content with fallback
+export const getContentWithFallback = (
+  content: PageContentBlock[], 
+  sectionKey: string, 
+  fallback: Partial<PageContentBlock>
+): PageContentBlock => {
+  const dbContent = getContentBySection(content, sectionKey)
+  if (dbContent) {
+    return dbContent
+  }
+  
+  // Return fallback content in the same format
+  return {
+    id: `fallback-${sectionKey}`,
+    section_key: sectionKey,
+    content_type: fallback.content_type || 'text',
+    title: fallback.title || '',
+    subtitle: fallback.subtitle || '',
+    content_text: fallback.content_text || '',
+    image_url: fallback.image_url || '',
+    button_text: fallback.button_text || '',
+    button_link: fallback.button_link || '',
+    order_position: fallback.order_position || 0,
+    metadata: fallback.metadata || {},
+    active: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   }
 }

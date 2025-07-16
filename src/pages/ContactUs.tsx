@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { MapPin, Phone, Mail, Clock, MessageCircle, Send, CheckCircle } from 'lucide-react';
+import { usePageContent, getContentWithFallback } from '../hooks/usePageContent';
 
 const ContactUs: React.FC = () => {
+  const { content: pageContent, loading: contentLoading } = usePageContent('contact');
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -11,6 +13,22 @@ const ContactUs: React.FC = () => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+
+  // Get page content with fallbacks
+  const heroContent = getContentWithFallback(pageContent, 'hero', {
+    title: 'Contact Us',
+    content_text: 'Get in touch with Kenya\'s premier children\'s entertainment experts. We\'re here to make your event magical!'
+  });
+
+  const formContent = getContentWithFallback(pageContent, 'contact_form', {
+    title: 'Send us a Message',
+    content_text: 'We\'d love to hear from you!'
+  });
+
+  const locationsContent = getContentWithFallback(pageContent, 'locations', {
+    title: 'Our Locations',
+    content_text: 'Visit us at any of our convenient locations across Nairobi'
+  });
 
   const locations = [
     {
@@ -87,10 +105,14 @@ const ContactUs: React.FC = () => {
 
         <div className="max-w-6xl mx-auto text-center relative">
           <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 drop-shadow-lg">
-            Contact <span className="text-star-yellow">Us</span>
+            {heroContent.title.split(' ').map((word, index) => 
+              word === 'Us' ? 
+                <span key={index} className="text-star-yellow">{word}</span> : 
+                <span key={index}>{word} </span>
+            )}
           </h1>
           <p className="text-xl md:text-2xl text-white/95 max-w-4xl mx-auto leading-relaxed">
-            Get in touch with Kenya's premier children's entertainment experts. We're here to make your event magical!
+            {heroContent.content_text}
           </p>
         </div>
       </section>
@@ -149,8 +171,8 @@ const ContactUs: React.FC = () => {
             {/* Contact Form */}
             <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
               <div className="bg-gradient-to-r from-royal-blue to-blue-600 p-8 text-center">
-                <h2 className="text-3xl font-bold text-white mb-2">Send us a Message</h2>
-                <p className="text-white/90">We'd love to hear from you!</p>
+                <h2 className="text-3xl font-bold text-white mb-2">{formContent.title}</h2>
+                <p className="text-white/90">{formContent.content_text}</p>
               </div>
 
               <form onSubmit={handleSubmit} className="p-8">
@@ -296,10 +318,14 @@ const ContactUs: React.FC = () => {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 drop-shadow-lg">
-              Our <span className="text-star-yellow">Locations</span>
+              {locationsContent.title.split(' ').map((word, index) => 
+                word === 'Locations' ? 
+                  <span key={index} className="text-star-yellow">{word}</span> : 
+                  <span key={index}>{word} </span>
+              )}
             </h2>
             <p className="text-xl text-white/90 max-w-3xl mx-auto">
-              Visit us at any of our convenient locations across Nairobi
+              {locationsContent.content_text}
             </p>
           </div>
 

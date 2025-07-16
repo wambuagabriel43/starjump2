@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Building2, Users, Calendar, Award, CheckCircle, Send, MapPin, Phone, Mail } from 'lucide-react';
+import { usePageContent, getContentWithFallback } from '../hooks/usePageContent';
 
 const Corporate: React.FC = () => {
+  const { content: pageContent, loading: contentLoading } = usePageContent('corporate');
   const [formData, setFormData] = useState({
     name: '',
     institution: '',
@@ -14,6 +16,27 @@ const Corporate: React.FC = () => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+
+  // Get page content with fallbacks
+  const heroContent = getContentWithFallback(pageContent, 'hero', {
+    title: 'Corporate Solutions',
+    content_text: 'Transform your institution with premium play solutions. From permanent installations to event rentals, we create engaging experiences for your community.'
+  });
+
+  const servicesContent = getContentWithFallback(pageContent, 'services', {
+    title: 'Our Services',
+    content_text: 'Comprehensive play solutions tailored for institutions and corporate clients'
+  });
+
+  const clientsContent = getContentWithFallback(pageContent, 'clients', {
+    title: 'Who We Serve',
+    content_text: 'Trusted by leading institutions across Kenya'
+  });
+
+  const ctaContent = getContentWithFallback(pageContent, 'cta', {
+    title: 'Let\'s Build a Play Space Together!',
+    content_text: 'Tell us about your institution and requirements'
+  });
 
   const services = [
     {
@@ -99,10 +122,14 @@ const Corporate: React.FC = () => {
 
         <div className="max-w-6xl mx-auto text-center relative">
           <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 drop-shadow-lg">
-            Corporate <span className="text-star-yellow">Solutions</span>
+            {heroContent.title.split(' ').map((word, index) => 
+              word === 'Solutions' ? 
+                <span key={index} className="text-star-yellow">{word}</span> : 
+                <span key={index}>{word} </span>
+            )}
           </h1>
           <p className="text-xl md:text-2xl text-white/95 max-w-4xl mx-auto leading-relaxed mb-8">
-            Transform your institution with premium play solutions. From permanent installations to event rentals, we create engaging experiences for your community.
+            {heroContent.content_text}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a
@@ -126,10 +153,14 @@ const Corporate: React.FC = () => {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 drop-shadow-lg">
-              Our <span className="text-star-yellow">Services</span>
+              {servicesContent.title.split(' ').map((word, index) => 
+                word === 'Services' ? 
+                  <span key={index} className="text-star-yellow">{word}</span> : 
+                  <span key={index}>{word} </span>
+              )}
             </h2>
             <p className="text-xl text-white/90 max-w-3xl mx-auto">
-              Comprehensive play solutions tailored for institutions and corporate clients
+              {servicesContent.content_text}
             </p>
           </div>
 
@@ -163,10 +194,14 @@ const Corporate: React.FC = () => {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 drop-shadow-lg">
-              Who We <span className="text-star-yellow">Serve</span>
+              {clientsContent.title.split(' ').map((word, index) => 
+                word === 'Serve' ? 
+                  <span key={index} className="text-star-yellow">{word}</span> : 
+                  <span key={index}>{word} </span>
+              )}
             </h2>
             <p className="text-xl text-white/90 max-w-3xl mx-auto">
-              Trusted by leading institutions across Kenya
+              {clientsContent.content_text}
             </p>
           </div>
 
@@ -187,8 +222,8 @@ const Corporate: React.FC = () => {
         <div className="max-w-4xl mx-auto">
           <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
             <div className="bg-gradient-to-r from-royal-blue to-blue-600 p-8 text-center">
-              <h2 className="text-3xl font-bold text-white mb-2">Let's Build a Play Space Together!</h2>
-              <p className="text-white/90">Tell us about your institution and requirements</p>
+              <h2 className="text-3xl font-bold text-white mb-2">{ctaContent.title}</h2>
+              <p className="text-white/90">{ctaContent.content_text}</p>
             </div>
 
             <form onSubmit={handleSubmit} className="p-8 md:p-12">

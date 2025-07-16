@@ -1,17 +1,59 @@
 import React from 'react';
 import { Calendar, MapPin, Clock, Users, Star } from 'lucide-react';
 import { useEvents } from '../hooks/useSupabaseData';
-import { usePageContent, getContentBySection } from '../hooks/usePageContent';
+import { usePageContent, getContentWithFallback } from '../hooks/usePageContent';
 
 const Events: React.FC = () => {
   const { events, loading, error } = useEvents();
   const { content: pageContent, loading: contentLoading } = usePageContent('events');
 
-  // Get page content sections
-  const heroContent = getContentBySection(pageContent, 'hero');
-  const featuredSectionContent = getContentBySection(pageContent, 'featured_section');
-  const allEventsSectionContent = getContentBySection(pageContent, 'all_events_section');
-  const ctaSectionContent = getContentBySection(pageContent, 'cta_section');
+  // Get page content sections with fallbacks
+  const heroContent = getContentWithFallback(pageContent, 'hero', {
+    title: 'Upcoming Events',
+    content_text: 'Join us at exciting events across Kenya! From festivals to corporate gatherings, experience the magic of Star Jump.'
+  });
+
+  const featuredSectionContent = getContentWithFallback(pageContent, 'featured_section', {
+    title: 'Featured Events',
+    content_text: 'Don\'t miss these amazing upcoming events and celebrations'
+  });
+
+  const allEventsSectionContent = getContentWithFallback(pageContent, 'all_events_section', {
+    title: 'All Events'
+  });
+
+  const ctaSectionContent = getContentWithFallback(pageContent, 'cta_section', {
+    title: 'Want Star Jump at Your Event?',
+    content_text: 'Planning an event? Let us bring the fun to you! Contact us for custom event solutions and equipment rentals.'
+  });
+
+  // Static featured events data (can be moved to database later)
+  const featuredEvents = [
+    {
+      id: 'featured-1',
+      title: 'Summer Fun Festival',
+      date: 'March 15, 2024',
+      time: '10:00 AM - 4:00 PM',
+      location: 'Greenspan Mall, Nairobi',
+      description: 'Join us for a day of bouncing, sliding, and endless fun! Perfect for families and kids of all ages.',
+      image_url: 'https://images.pexels.com/photos/1619654/pexels-photo-1619654.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&dpr=1',
+      category: 'Festival',
+      price_text: 'Free Entry',
+      attendees: '200+ families'
+    },
+    {
+      id: 'featured-2',
+      title: 'Corporate Family Day',
+      date: 'March 22, 2024',
+      time: '9:00 AM - 3:00 PM',
+      location: 'Garden City Mall, Nairobi',
+      description: 'Special corporate event with multiple bouncy castles, slides, and interactive games for employees and their families.',
+      image_url: 'https://images.pexels.com/photos/1104014/pexels-photo-1104014.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&dpr=1',
+      category: 'Corporate',
+      price_text: 'Invitation Only',
+      attendees: '150+ employees'
+    }
+  ];
 
   if (loading || contentLoading) {
     return (
@@ -36,10 +78,10 @@ const Events: React.FC = () => {
 
         <div className="max-w-6xl mx-auto text-center relative">
           <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 drop-shadow-lg">
-            {heroContent?.title || 'Upcoming Events'}
+            {heroContent.title}
           </h1>
           <p className="text-xl md:text-2xl text-white/95 max-w-4xl mx-auto leading-relaxed">
-            {heroContent?.content_text || 'Join us at exciting events across Kenya! From festivals to corporate gatherings, experience the magic of Star Jump.'}
+            {heroContent.content_text}
           </p>
         </div>
       </section>
@@ -49,10 +91,10 @@ const Events: React.FC = () => {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 drop-shadow-lg">
-              {featuredSectionContent?.title || 'Featured Events'}
+              {featuredSectionContent.title}
             </h2>
             <p className="text-xl text-white/90 max-w-3xl mx-auto">
-              {featuredSectionContent?.content_text || 'Don\'t miss these amazing upcoming events and celebrations'}
+              {featuredSectionContent.content_text}
             </p>
           </div>
 
@@ -128,7 +170,7 @@ const Events: React.FC = () => {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 drop-shadow-lg">
-              {allEventsSectionContent?.title || 'All Events'}
+              {allEventsSectionContent.title}
             </h2>
           </div>
 
@@ -211,10 +253,10 @@ const Events: React.FC = () => {
         <div className="max-w-4xl mx-auto text-center">
           <div className="bg-gradient-to-br from-white to-gray-50 rounded-3xl p-12 shadow-2xl">
             <h2 className="text-4xl font-bold text-royal-blue mb-6">
-              {ctaSectionContent?.title || 'Want Star Jump at Your Event?'}
+              {ctaSectionContent.title}
             </h2>
             <p className="text-xl text-gray-700 mb-8 leading-relaxed">
-              {ctaSectionContent?.content_text || 'Planning an event? Let us bring the fun to you! Contact us for custom event solutions and equipment rentals.'}
+              {ctaSectionContent.content_text}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a

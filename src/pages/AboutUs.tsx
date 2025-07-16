@@ -1,64 +1,40 @@
 import React from 'react';
 import { Star, Heart, Users, Award, Target, Eye } from 'lucide-react';
-import { usePageContent, getContentBySection, renderContentByType } from '../hooks/usePageContent';
+import { usePageContent, getContentWithFallback } from '../hooks/usePageContent';
 
 const AboutUs: React.FC = () => {
   const { content: pageContent, loading, error } = usePageContent('about');
   
-  // Debug logging
-  React.useEffect(() => {
-    console.log('[AboutUs] Component mounted/updated - pageContent:', pageContent.length, 'items');
-    pageContent.forEach((item, index) => {
-      console.log(`[AboutUs] Content ${index + 1}:`, item.section_key, '-', item.title);
-    });
-  }, [pageContent]);
-
-  // Get content sections with database-first approach
-  const getContentSection = (sectionKey: string, fallback: any = {}) => {
-    const dbContent = getContentBySection(pageContent, sectionKey);
-    if (dbContent) {
-      console.log(`[AboutUs] Using database content for ${sectionKey}:`, dbContent.title);
-      return renderContentByType(dbContent);
-    }
-    console.log(`[AboutUs] Using fallback content for ${sectionKey}`);
-    return renderContentByType({ ...fallback, content_type: fallback.content_type || 'text' });
-  };
-
-  // Get all content sections
-  const hero = getContentSection('hero', {
+  // Get all content sections with fallbacks
+  const hero = getContentWithFallback(pageContent, 'hero', {
     title: 'About Star Jump',
-    content_text: 'Kenya\'s premier provider of fun stations and children\'s play areas, bringing joy and excitement to every celebration since 2018.',
-    content_type: 'hero_section'
+    content_text: 'Kenya\'s premier provider of fun stations and children\'s play areas, bringing joy and excitement to every celebration since 2018.'
   });
 
-  const story = getContentSection('story', {
+  const story = getContentWithFallback(pageContent, 'story', {
     title: 'Our Story',
     content_text: 'Star Jump was born from a simple belief: every child deserves to experience pure joy and wonder. Founded in Nairobi in 2018, we started with a single bouncy castle and a dream to make celebrations unforgettable.\n\nToday, we\'re proud to serve families, schools, malls, and corporations across Kenya with our premium collection of play equipment and professional event services. From intimate birthday parties to large corporate events, we bring the magic of play to every occasion.\n\nOur commitment to safety, quality, and exceptional service has made us Kenya\'s trusted partner for creating memories that last a lifetime.',
-    content_type: 'text_with_image',
+    image_url: 'https://images.pexels.com/photos/1104014/pexels-photo-1104014.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&dpr=1',
     metadata: {
-      image_url: 'https://images.pexels.com/photos/1104014/pexels-photo-1104014.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&dpr=1',
       layout: 'right-image'
     }
   });
 
-  const mission = getContentSection('mission', {
+  const mission = getContentWithFallback(pageContent, 'mission', {
     title: 'Our Mission',
     content_text: 'To create magical play experiences that bring families and communities together, while providing safe, high-quality entertainment solutions that spark joy and imagination in children across Kenya.',
-    content_type: 'mission_vision',
     metadata: { type: 'mission', icon: 'Target' }
   });
 
-  const vision = getContentSection('vision', {
+  const vision = getContentWithFallback(pageContent, 'vision', {
     title: 'Our Vision',
     content_text: 'To be East Africa\'s leading provider of children\'s entertainment solutions, setting the standard for safety, innovation, and service excellence in the play equipment industry.',
-    content_type: 'mission_vision',
     metadata: { type: 'vision', icon: 'Eye' }
   });
 
-  const values = getContentSection('values', {
+  const values = getContentWithFallback(pageContent, 'values', {
     title: 'Our Values',
     subtitle: 'The principles that guide everything we do at Star Jump',
-    content_type: 'values_grid',
     metadata: {
       values: [
         { title: 'Child Safety First', description: 'Every piece of equipment is regularly inspected and meets international safety standards.', icon: 'Heart', color: 'bg-red-500' },
@@ -69,10 +45,9 @@ const AboutUs: React.FC = () => {
     }
   });
 
-  const team = getContentSection('team', {
+  const team = getContentWithFallback(pageContent, 'team', {
     title: 'Meet Our Team',
     subtitle: 'The passionate people behind Kenya\'s favorite play experience provider',
-    content_type: 'team_grid',
     metadata: {
       members: [
         { name: 'Sarah Wanjiku', role: 'Founder & CEO', image: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=400&h=400&dpr=1', description: 'Passionate about creating magical experiences for children across Kenya.' },
@@ -82,10 +57,9 @@ const AboutUs: React.FC = () => {
     }
   });
 
-  const cta = getContentSection('cta', {
+  const cta = getContentWithFallback(pageContent, 'cta', {
     title: 'Ready to Create Magic?',
     content_text: 'Let\'s work together to make your next event unforgettable. Contact us today for a personalized quote!',
-    content_type: 'cta_section',
     metadata: {
       buttons: [
         { text: 'Book Now', link: '/booking' },
@@ -93,6 +67,13 @@ const AboutUs: React.FC = () => {
       ]
     }
   });
+
+  // Debug logging
+  React.useEffect(() => {
+    console.log('[AboutUs] Page content loaded:', pageContent.length, 'items');
+    if (error) console.error('[AboutUs] Error:', error);
+    if (loading) console.log('[AboutUs] Loading...');
+  }, [pageContent, loading, error]);
 
   if (loading) {
     return (
@@ -119,14 +100,14 @@ const AboutUs: React.FC = () => {
 
         <div className="max-w-6xl mx-auto text-center relative">
           <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 drop-shadow-lg">
-            {hero.title?.split(' ').map((word, index) => 
+            {hero.title.split(' ').map((word, index) => 
               word === 'Star' || word === 'Jump' ? 
                 <span key={index} className="text-star-yellow">{word} </span> : 
                 <span key={index}>{word} </span>
             )}
           </h1>
           <p className="text-xl md:text-2xl text-white/95 max-w-4xl mx-auto leading-relaxed">
-            {hero.description}
+            {hero.content_text}
           </p>
         </div>
       </section>
@@ -139,7 +120,7 @@ const AboutUs: React.FC = () => {
             <div className="relative">
               <div className="relative overflow-hidden rounded-3xl shadow-2xl">
                 <img
-                  src={story.image_url}
+                  src={story.image_url || 'https://images.pexels.com/photos/1104014/pexels-photo-1104014.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&dpr=1'}
                   alt={story.title}
                   className="w-full h-80 lg:h-96 object-cover"
                 />
@@ -154,14 +135,14 @@ const AboutUs: React.FC = () => {
             {/* Content */}
             <div className="lg:pl-8">
               <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 leading-tight">
-                {story.title?.split(' ').map((word, index) => 
+                {story.title.split(' ').map((word, index) => 
                   word === 'Story' ? 
                     <span key={index} className="text-star-yellow">{word}</span> : 
                     <span key={index}>{word} </span>
                 )}
               </h2>
               <div className="text-lg text-white/90 leading-relaxed">
-                {story.content?.split('\n\n').map((paragraph, index) => (
+                {story.content_text.split('\n\n').map((paragraph, index) => (
                   <p key={index} className="mb-4">{paragraph}</p>
                 ))}
               </div>
@@ -183,7 +164,7 @@ const AboutUs: React.FC = () => {
                 <h3 className="text-3xl font-bold text-royal-blue">{mission.title}</h3>
               </div>
               <p className="text-gray-700 text-lg leading-relaxed">
-                {mission.content}
+                {mission.content_text}
               </p>
             </div>
 
@@ -196,7 +177,7 @@ const AboutUs: React.FC = () => {
                 <h3 className="text-3xl font-bold">{vision.title}</h3>
               </div>
               <p className="text-white/95 text-lg leading-relaxed">
-                {vision.content}
+                {vision.content_text}
               </p>
             </div>
           </div>
@@ -208,7 +189,7 @@ const AboutUs: React.FC = () => {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 drop-shadow-lg">
-              {values.title?.split(' ').map((word, index) => 
+              {values.title.split(' ').map((word, index) => 
                 word === 'Values' ? 
                   <span key={index} className="text-star-yellow">{word}</span> : 
                   <span key={index}>{word} </span>
@@ -220,7 +201,7 @@ const AboutUs: React.FC = () => {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {values.values?.map((value, index) => {
+            {values.metadata?.values?.map((value, index) => {
               const iconMap = { Heart, Star, Users, Award };
               const Icon = iconMap[value.icon] || Star;
               return (
@@ -242,7 +223,7 @@ const AboutUs: React.FC = () => {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 drop-shadow-lg">
-              {team.title?.split(' ').map((word, index) => 
+              {team.title.split(' ').map((word, index) => 
                 word === 'Team' ? 
                   <span key={index} className="text-star-yellow">{word}</span> : 
                   <span key={index}>{word} </span>
@@ -254,7 +235,7 @@ const AboutUs: React.FC = () => {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {team.members?.map((member, index) => (
+            {team.metadata?.members?.map((member, index) => (
               <div key={index} className="bg-white rounded-3xl overflow-hidden shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-105">
                 <div className="h-64 overflow-hidden">
                   <img
@@ -282,10 +263,10 @@ const AboutUs: React.FC = () => {
               {cta.title}
             </h2>
             <p className="text-xl text-gray-700 mb-8 leading-relaxed">
-              {cta.description}
+              {cta.content_text}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              {cta.buttons?.map((button, index) => (
+              {cta.metadata?.buttons?.map((button, index) => (
                 <a
                   key={index}
                   href={button.link}

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Calendar, User, Phone, Mail, MapPin, FileText, Send, Star, Users } from 'lucide-react';
+import { usePageContent, getContentWithFallback } from '../hooks/usePageContent';
 
 interface FormData {
   fullName: string;
@@ -13,6 +14,7 @@ interface FormData {
 }
 
 const BookingForm: React.FC = () => {
+  const { content: pageContent, loading: contentLoading } = usePageContent('booking');
   const [formData, setFormData] = useState<FormData>({
     fullName: '',
     contactNumber: '',
@@ -26,6 +28,17 @@ const BookingForm: React.FC = () => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+
+  // Get page content with fallbacks
+  const heroContent = getContentWithFallback(pageContent, 'hero', {
+    title: 'Book Your Fun Space',
+    content_text: 'Fill out the form below and we\'ll get back to you with availability and pricing in KES!'
+  });
+
+  const formContent = getContentWithFallback(pageContent, 'booking_form', {
+    title: 'Let\'s Make Your Event Amazing!',
+    content_text: 'Tell us about your event and we\'ll handle the rest'
+  });
 
   const eventTypes = [
     'Birthday Party',
@@ -98,19 +111,19 @@ const BookingForm: React.FC = () => {
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 drop-shadow-lg">
-            Book Your Fun Space
+            {heroContent.title}
           </h1>
           <div className="w-24 h-1 bg-star-yellow mx-auto rounded-full"></div>
           <p className="text-xl text-white mt-4 opacity-90 max-w-2xl mx-auto">
-            Fill out the form below and we'll get back to you with availability and pricing in KES!
+            {heroContent.content_text}
           </p>
         </div>
 
         {/* Form Container */}
         <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
           <div className="bg-gradient-to-r from-bright-orange to-fun-pink p-8 text-center">
-            <h2 className="text-2xl font-bold text-white">Let's Make Your Event Amazing!</h2>
-            <p className="text-white/90 mt-2">Tell us about your event and we'll handle the rest</p>
+            <h2 className="text-2xl font-bold text-white">{formContent.title}</h2>
+            <p className="text-white/90 mt-2">{formContent.content_text}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="p-8 md:p-12">

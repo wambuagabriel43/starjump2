@@ -1,9 +1,27 @@
 import React from 'react';
 import { Calendar, User, Tag, ArrowRight, Clock } from 'lucide-react';
 import { useBlogPosts } from '../hooks/useContentData';
+import { usePageContent, getContentWithFallback } from '../hooks/usePageContent';
 
 const Blog: React.FC = () => {
   const { posts: blogPosts, loading, error } = useBlogPosts();
+  const { content: pageContent, loading: contentLoading } = usePageContent('blog');
+
+  // Get page content with fallbacks
+  const heroContent = getContentWithFallback(pageContent, 'hero', {
+    title: 'Star Jump Blog',
+    content_text: 'Insights, tips, and stories from Kenya\'s leading children\'s entertainment experts'
+  });
+
+  const featuredContent = getContentWithFallback(pageContent, 'featured', {
+    title: 'Featured Articles',
+    content_text: 'Our most popular and insightful posts'
+  });
+
+  const newsletterContent = getContentWithFallback(pageContent, 'newsletter', {
+    title: 'Stay Updated!',
+    content_text: 'Subscribe to our newsletter for the latest tips, event updates, and exclusive offers from Star Jump Kenya.'
+  });
 
   const categories = ['All', 'Parenting Tips', 'Events', 'Safety', 'Corporate', 'Partnerships'];
   const [selectedCategory, setSelectedCategory] = React.useState('All');
@@ -15,7 +33,7 @@ const Blog: React.FC = () => {
   const featuredPosts = blogPosts.filter(post => post.featured);
   const latestPosts = blogPosts.slice(0, 3);
 
-  if (loading) {
+  if (loading || contentLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -49,10 +67,14 @@ const Blog: React.FC = () => {
 
         <div className="max-w-6xl mx-auto text-center relative">
           <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 drop-shadow-lg">
-            Star Jump <span className="text-star-yellow">Blog</span>
+            {heroContent.title.split(' ').map((word, index) => 
+              word === 'Blog' ? 
+                <span key={index} className="text-star-yellow">{word}</span> : 
+                <span key={index}>{word} </span>
+            )}
           </h1>
           <p className="text-xl md:text-2xl text-white/95 max-w-4xl mx-auto leading-relaxed">
-            Insights, tips, and stories from Kenya's leading children's entertainment experts
+            {heroContent.content_text}
           </p>
         </div>
       </section>
@@ -62,10 +84,14 @@ const Blog: React.FC = () => {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 drop-shadow-lg">
-              Featured <span className="text-star-yellow">Articles</span>
+              {featuredContent.title.split(' ').map((word, index) => 
+                word === 'Articles' ? 
+                  <span key={index} className="text-star-yellow">{word}</span> : 
+                  <span key={index}>{word} </span>
+              )}
             </h2>
             <p className="text-xl text-white/90 max-w-3xl mx-auto">
-              Our most popular and insightful posts
+              {featuredContent.content_text}
             </p>
           </div>
 
@@ -215,10 +241,10 @@ const Blog: React.FC = () => {
         <div className="max-w-4xl mx-auto text-center">
           <div className="bg-gradient-to-br from-white to-gray-50 rounded-3xl p-12 shadow-2xl">
             <h2 className="text-4xl font-bold text-royal-blue mb-6">
-              Stay Updated!
+              {newsletterContent.title}
             </h2>
             <p className="text-xl text-gray-700 mb-8 leading-relaxed">
-              Subscribe to our newsletter for the latest tips, event updates, and exclusive offers from Star Jump Kenya.
+              {newsletterContent.content_text}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
               <input

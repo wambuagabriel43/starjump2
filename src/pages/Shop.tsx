@@ -2,11 +2,35 @@ import React, { useState } from 'react';
 import { ShoppingCart, Star, Eye, Filter, Search } from 'lucide-react';
 import { useProducts } from '../hooks/useSupabaseData';
 import { formatKES } from '../lib/supabase';
+import { usePageContent, getContentWithFallback } from '../hooks/usePageContent';
 
 const Shop: React.FC = () => {
   const { products, loading, error } = useProducts();
+  const { content: pageContent, loading: contentLoading } = usePageContent('shop');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Get page content with fallbacks
+  const heroContent = getContentWithFallback(pageContent, 'hero', {
+    title: 'Fun Shop',
+    content_text: 'Discover our premium collection of play equipment and accessories. Quality guaranteed, fun delivered across Kenya!'
+  });
+
+  const featuresContent = getContentWithFallback(pageContent, 'features', {
+    title: 'Why Choose Our Equipment?',
+    metadata: {
+      features: [
+        { title: 'Free Delivery', description: 'Free delivery within Nairobi for orders over KES 5,000', icon: '🚚', color: 'bg-grass-green' },
+        { title: 'Safety Guaranteed', description: 'All equipment is safety certified and regularly inspected', icon: '🛡️', color: 'bg-star-yellow' },
+        { title: 'Premium Quality', description: 'High-quality equipment from trusted international brands', icon: '⭐', color: 'bg-bright-orange' }
+      ]
+    }
+  });
+
+  const ctaContent = getContentWithFallback(pageContent, 'cta', {
+    title: 'Need Help Choosing?',
+    content_text: 'Our team is here to help you select the perfect equipment for your event. Get personalized recommendations!'
+  });
 
   const categories = ['All', 'Bouncy Castle', 'Slide', 'Trampoline', 'Apparel', 'Accessories'];
 
@@ -16,7 +40,7 @@ const Shop: React.FC = () => {
     return matchesCategory && matchesSearch;
   });
 
-  if (loading) {
+  if (loading || contentLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -50,10 +74,14 @@ const Shop: React.FC = () => {
 
         <div className="max-w-6xl mx-auto text-center relative">
           <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 drop-shadow-lg">
-            Fun <span className="text-star-yellow">Shop</span>
+            {heroContent.title.split(' ').map((word, index) => 
+              word === 'Shop' ? 
+                <span key={index} className="text-star-yellow">{word}</span> : 
+                <span key={index}>{word} </span>
+            )}
           </h1>
           <p className="text-xl md:text-2xl text-white/95 max-w-4xl mx-auto leading-relaxed">
-            Discover our premium collection of play equipment and accessories. Quality guaranteed, fun delivered across Kenya!
+            {heroContent.content_text}
           </p>
         </div>
       </section>
@@ -233,29 +261,15 @@ const Shop: React.FC = () => {
       <section className="py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-white rounded-2xl p-6 shadow-xl text-center">
-              <div className="w-16 h-16 bg-grass-green rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">🚚</span>
+            {featuresContent.metadata?.features?.map((feature, index) => (
+              <div key={index} className="bg-white rounded-2xl p-6 shadow-xl text-center">
+                <div className={`w-16 h-16 ${feature.color} rounded-full flex items-center justify-center mx-auto mb-4`}>
+                  <span className="text-2xl">{feature.icon}</span>
+                </div>
+                <h3 className="text-xl font-bold text-royal-blue mb-2">{feature.title}</h3>
+                <p className="text-gray-600">{feature.description}</p>
               </div>
-              <h3 className="text-xl font-bold text-royal-blue mb-2">Free Delivery</h3>
-              <p className="text-gray-600">Free delivery within Nairobi for orders over KES 5,000</p>
-            </div>
-
-            <div className="bg-white rounded-2xl p-6 shadow-xl text-center">
-              <div className="w-16 h-16 bg-star-yellow rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">🛡️</span>
-              </div>
-              <h3 className="text-xl font-bold text-royal-blue mb-2">Safety Guaranteed</h3>
-              <p className="text-gray-600">All equipment is safety certified and regularly inspected</p>
-            </div>
-
-            <div className="bg-white rounded-2xl p-6 shadow-xl text-center">
-              <div className="w-16 h-16 bg-bright-orange rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">⭐</span>
-              </div>
-              <h3 className="text-xl font-bold text-royal-blue mb-2">Premium Quality</h3>
-              <p className="text-gray-600">High-quality equipment from trusted international brands</p>
-            </div>
+            ))}
           </div>
         </div>
       </section>
@@ -265,10 +279,10 @@ const Shop: React.FC = () => {
         <div className="max-w-4xl mx-auto text-center">
           <div className="bg-gradient-to-br from-white to-gray-50 rounded-3xl p-12 shadow-2xl">
             <h2 className="text-4xl font-bold text-royal-blue mb-6">
-              Need Help Choosing?
+              {ctaContent.title}
             </h2>
             <p className="text-xl text-gray-700 mb-8 leading-relaxed">
-              Our team is here to help you select the perfect equipment for your event. Get personalized recommendations!
+              {ctaContent.content_text}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a
