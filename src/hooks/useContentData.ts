@@ -154,10 +154,30 @@ export const usePageContent = (pageSlug: string, sectionKey?: string) => {
           return
         }
 
+        // First, get the page UUID from page_content table using the slug
+        const { data: pageData, error: pageError } = await supabase
+          .from('page_content')
+          .select('id')
+          .eq('page_slug', pageSlug)
+          .single()
+
+        if (pageError) {
+          debugLog('Error fetching page data:', pageError);
+          throw pageError
+        }
+
+        if (!pageData) {
+          debugLog(`No page found with slug: ${pageSlug}`);
+          setContent([])
+          setLoading(false)
+          return
+        }
+
+        // Now query page_sections using the page UUID
         let query = supabase
           .from('page_sections')
           .select('*')
-          .eq('page_id', pageSlug)
+          .eq('page_id', pageData.id)
           .eq('active', true)
           .order('order_position', { ascending: true })
 
@@ -177,7 +197,7 @@ export const usePageContent = (pageSlug: string, sectionKey?: string) => {
         // Transform page_sections data to match PageContentBlock interface
         const transformedData = (data || []).map(item => ({
           id: item.id,
-          page_slug: item.page_id,
+          page_slug: pageSlug,
           section_key: item.section_type,
           content_type: item.section_type,
           title: item.title,
