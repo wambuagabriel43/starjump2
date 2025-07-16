@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, X, Star, Settings } from 'lucide-react';
-import { useSiteAssets, useMenuItems } from '../hooks/useSupabaseData';
+import { useSiteAssets, useMenuItems, useSiteSettings } from '../hooks/useSupabaseData';
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { assets, loading: assetsLoading, error: assetsError } = useSiteAssets();
   const { menuItems, loading: menuLoading, error: menuError } = useMenuItems();
+  const { settings, loading: settingsLoading } = useSiteSettings();
   
   // Get header logo
   const headerLogo = assets.find(asset => 
@@ -44,7 +45,7 @@ const Header: React.FC = () => {
     }).join('\n');
 
   // Show loading state
-  if (assetsLoading || menuLoading) {
+  if (assetsLoading || menuLoading || settingsLoading) {
     return (
       <header className="relative z-50">
         <nav className="header-themed shadow-lg">
