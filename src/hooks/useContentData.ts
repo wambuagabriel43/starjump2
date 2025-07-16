@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
-// Types for content management
+// Enhanced types for comprehensive content management
 export interface PageContentBlock {
   id: string
   page_slug: string
@@ -70,7 +70,7 @@ export interface BlogPost {
   updated_at: string
 }
 
-// Hook for page content blocks
+// Hook for page content blocks with enhanced error handling
 export const usePageContent = (pageSlug: string, sectionKey?: string) => {
   const [content, setContent] = useState<PageContentBlock[]>([])
   const [loading, setLoading] = useState(true)
@@ -81,6 +81,14 @@ export const usePageContent = (pageSlug: string, sectionKey?: string) => {
       setLoading(true)
       setError(null)
       try {
+        // Check if Supabase is configured
+        if (!supabase) {
+          console.warn('Supabase not configured, using empty content')
+          setContent([])
+          setLoading(false)
+          return
+        }
+
         let query = supabase
           .from('page_content_blocks')
           .select('*')
@@ -94,7 +102,10 @@ export const usePageContent = (pageSlug: string, sectionKey?: string) => {
 
         const { data, error } = await query
 
-        if (error) throw error
+        if (error) {
+          console.error('Error fetching page content:', error)
+          throw error
+        }
         setContent(data || [])
       } catch (err) {
         console.error('Error fetching page content:', err)
@@ -112,6 +123,13 @@ export const usePageContent = (pageSlug: string, sectionKey?: string) => {
     setLoading(true)
     setError(null)
     try {
+      if (!supabase) {
+        console.warn('Supabase not configured, using empty content')
+        setContent([])
+        setLoading(false)
+        return
+      }
+
       let query = supabase
         .from('page_content_blocks')
         .select('*')
@@ -125,7 +143,10 @@ export const usePageContent = (pageSlug: string, sectionKey?: string) => {
 
       const { data, error } = await query
 
-      if (error) throw error
+      if (error) {
+        console.error('Error refetching page content:', error)
+        throw error
+      }
       setContent(data || [])
     } catch (err) {
       console.error('Error refetching page content:', err)
@@ -150,13 +171,23 @@ export const useStaticEvents = () => {
       setLoading(true)
       setError(null)
       try {
+        if (!supabase) {
+          console.warn('Supabase not configured, using empty events')
+          setEvents([])
+          setLoading(false)
+          return
+        }
+
         const { data, error } = await supabase
           .from('static_events')
           .select('*')
           .eq('active', true)
           .order('date', { ascending: true })
 
-        if (error) throw error
+        if (error) {
+          console.error('Error fetching static events:', error)
+          throw error
+        }
         setEvents(data || [])
       } catch (err) {
         console.error('Error fetching static events:', err)
@@ -174,13 +205,23 @@ export const useStaticEvents = () => {
     setLoading(true)
     setError(null)
     try {
+      if (!supabase) {
+        console.warn('Supabase not configured, using empty events')
+        setEvents([])
+        setLoading(false)
+        return
+      }
+
       const { data, error } = await supabase
         .from('static_events')
         .select('*')
         .eq('active', true)
         .order('date', { ascending: true })
 
-      if (error) throw error
+      if (error) {
+        console.error('Error refetching static events:', error)
+        throw error
+      }
       setEvents(data || [])
     } catch (err) {
       console.error('Error refetching static events:', err)
@@ -205,6 +246,13 @@ export const useSiteContent = (contentKey?: string) => {
       setLoading(true)
       setError(null)
       try {
+        if (!supabase) {
+          console.warn('Supabase not configured, using empty site content')
+          setContent([])
+          setLoading(false)
+          return
+        }
+
         let query = supabase
           .from('site_content')
           .select('*')
@@ -216,7 +264,10 @@ export const useSiteContent = (contentKey?: string) => {
 
         const { data, error } = await query
 
-        if (error) throw error
+        if (error) {
+          console.error('Error fetching site content:', error)
+          throw error
+        }
         setContent(data || [])
       } catch (err) {
         console.error('Error fetching site content:', err)
@@ -234,6 +285,13 @@ export const useSiteContent = (contentKey?: string) => {
     setLoading(true)
     setError(null)
     try {
+      if (!supabase) {
+        console.warn('Supabase not configured, using empty site content')
+        setContent([])
+        setLoading(false)
+        return
+      }
+
       let query = supabase
         .from('site_content')
         .select('*')
@@ -245,7 +303,10 @@ export const useSiteContent = (contentKey?: string) => {
 
       const { data, error } = await query
 
-      if (error) throw error
+      if (error) {
+        console.error('Error refetching site content:', error)
+        throw error
+      }
       setContent(data || [])
     } catch (err) {
       console.error('Error refetching site content:', err)
@@ -270,13 +331,23 @@ export const useBlogPosts = () => {
       setLoading(true)
       setError(null)
       try {
+        if (!supabase) {
+          console.warn('Supabase not configured, using empty blog posts')
+          setPosts([])
+          setLoading(false)
+          return
+        }
+
         const { data, error } = await supabase
           .from('blog_posts')
           .select('*')
           .eq('active', true)
           .order('date', { ascending: false })
 
-        if (error) throw error
+        if (error) {
+          console.error('Error fetching blog posts:', error)
+          throw error
+        }
         setPosts(data || [])
       } catch (err) {
         console.error('Error fetching blog posts:', err)
@@ -294,13 +365,23 @@ export const useBlogPosts = () => {
     setLoading(true)
     setError(null)
     try {
+      if (!supabase) {
+        console.warn('Supabase not configured, using empty blog posts')
+        setPosts([])
+        setLoading(false)
+        return
+      }
+
       const { data, error } = await supabase
         .from('blog_posts')
         .select('*')
         .eq('active', true)
         .order('date', { ascending: false })
 
-      if (error) throw error
+      if (error) {
+        console.error('Error refetching blog posts:', error)
+        throw error
+      }
       setPosts(data || [])
     } catch (err) {
       console.error('Error refetching blog posts:', err)
@@ -323,4 +404,65 @@ export const getContentByKey = (content: SiteContent[], key: string): string => 
 // Utility function to get page content by section
 export const getPageContentBySection = (content: PageContentBlock[], sectionKey: string): PageContentBlock | null => {
   return content.find(c => c.section_key === sectionKey) || null
+}
+
+// Utility function to render content based on type
+export const renderContentByType = (content: PageContentBlock) => {
+  switch (content.content_type) {
+    case 'hero_section':
+      return {
+        title: content.title,
+        subtitle: content.subtitle,
+        description: content.content_text,
+        buttons: content.metadata?.buttons || []
+      }
+    case 'text_with_image':
+      return {
+        title: content.title,
+        content: content.content_text,
+        image_url: content.metadata?.image_url,
+        layout: content.metadata?.layout || 'left-image'
+      }
+    case 'values_grid':
+      return {
+        title: content.title,
+        subtitle: content.subtitle,
+        values: content.metadata?.values || []
+      }
+    case 'team_grid':
+      return {
+        title: content.title,
+        subtitle: content.subtitle,
+        members: content.metadata?.members || []
+      }
+    case 'services_grid':
+      return {
+        title: content.title,
+        subtitle: content.subtitle,
+        services: content.metadata?.services || []
+      }
+    case 'contact_info':
+      return {
+        title: content.title,
+        cards: content.metadata?.cards || []
+      }
+    case 'locations_grid':
+      return {
+        title: content.title,
+        subtitle: content.subtitle,
+        locations: content.metadata?.locations || []
+      }
+    case 'cta_section':
+      return {
+        title: content.title,
+        description: content.content_text,
+        buttons: content.metadata?.buttons || []
+      }
+    default:
+      return {
+        title: content.title,
+        subtitle: content.subtitle,
+        content: content.content_text
+      }
+  }
 }
