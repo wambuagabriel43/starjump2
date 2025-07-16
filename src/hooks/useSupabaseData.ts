@@ -126,6 +126,17 @@ export const useSiteAssets = (assetType?: string) => {
       setLoading(true)
       setError(null)
       try {
+        // Check if Supabase is properly configured
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+        
+        if (!supabaseUrl || !supabaseKey) {
+          console.warn('Supabase not configured, using empty assets array')
+          setAssets([])
+          setLoading(false)
+          return
+        }
+
         let query = supabase
           .from('site_assets')
           .select('*')
@@ -137,11 +148,20 @@ export const useSiteAssets = (assetType?: string) => {
 
         const { data, error } = await query.order('created_at', { ascending: false })
 
-        if (error) throw error
+        if (error) {
+          console.error('Supabase query error:', error)
+          throw new Error(`Database error: ${error.message}`)
+        }
         setAssets(data || [])
       } catch (err) {
         console.error('Error fetching site assets:', err)
-        setError(err instanceof Error ? err.message : 'An error occurred')
+        if (err instanceof TypeError && err.message.includes('Failed to fetch')) {
+          setError('Unable to connect to database. Please check your internet connection or contact support.')
+        } else {
+          setError(err instanceof Error ? err.message : 'An error occurred while loading site assets')
+        }
+        // Set empty array as fallback
+        setAssets([])
       } finally {
         setLoading(false)
       }
@@ -154,6 +174,17 @@ export const useSiteAssets = (assetType?: string) => {
     setLoading(true)
     setError(null)
     try {
+      // Check if Supabase is properly configured
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+      
+      if (!supabaseUrl || !supabaseKey) {
+        console.warn('Supabase not configured, using empty assets array')
+        setAssets([])
+        setLoading(false)
+        return
+      }
+
       let query = supabase
         .from('site_assets')
         .select('*')
@@ -165,11 +196,20 @@ export const useSiteAssets = (assetType?: string) => {
 
       const { data, error } = await query.order('created_at', { ascending: false })
 
-      if (error) throw error
+      if (error) {
+        console.error('Supabase query error:', error)
+        throw new Error(`Database error: ${error.message}`)
+      }
       setAssets(data || [])
     } catch (err) {
       console.error('Error refetching site assets:', err)
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      if (err instanceof TypeError && err.message.includes('Failed to fetch')) {
+        setError('Unable to connect to database. Please check your internet connection or contact support.')
+      } else {
+        setError(err instanceof Error ? err.message : 'An error occurred while loading site assets')
+      }
+      // Set empty array as fallback
+      setAssets([])
     } finally {
       setLoading(false)
     }
@@ -221,17 +261,37 @@ export const useMenuItems = () => {
       setLoading(true)
       setError(null)
       try {
+        // Check if Supabase is properly configured
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+        
+        if (!supabaseUrl || !supabaseKey) {
+          console.warn('Supabase not configured, using empty menu items')
+          setMenuItems([])
+          setLoading(false)
+          return
+        }
+
         const { data, error } = await supabase
           .from('menu_items')
           .select('*')
           .eq('active', true)
           .order('order_position', { ascending: true })
 
-        if (error) throw error
+        if (error) {
+          console.error('Supabase menu items query error:', error)
+          throw new Error(`Database error: ${error.message}`)
+        }
         setMenuItems(data || [])
       } catch (err) {
         console.error('Error fetching menu items:', err)
-        setError(err instanceof Error ? err.message : 'An error occurred')
+        if (err instanceof TypeError && err.message.includes('Failed to fetch')) {
+          setError('Unable to connect to database. Please check your internet connection or contact support.')
+        } else {
+          setError(err instanceof Error ? err.message : 'An error occurred while loading menu items')
+        }
+        // Use empty menu items as fallback
+        setMenuItems([])
       } finally {
         setLoading(false)
       }
@@ -240,5 +300,45 @@ export const useMenuItems = () => {
     fetchMenuItems()
   }, [])
 
-  return { menuItems, loading, error, refetch: () => window.location.reload() }
+  const refetch = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      // Check if Supabase is properly configured
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+      
+      if (!supabaseUrl || !supabaseKey) {
+        console.warn('Supabase not configured, using empty menu items')
+        setMenuItems([])
+        setLoading(false)
+        return
+      }
+
+      const { data, error } = await supabase
+        .from('menu_items')
+        .select('*')
+        .eq('active', true)
+        .order('order_position', { ascending: true })
+
+      if (error) {
+        console.error('Supabase menu items query error:', error)
+        throw new Error(`Database error: ${error.message}`)
+      }
+      setMenuItems(data || [])
+    } catch (err) {
+      console.error('Error refetching menu items:', err)
+      if (err instanceof TypeError && err.message.includes('Failed to fetch')) {
+        setError('Unable to connect to database. Please check your internet connection or contact support.')
+      } else {
+        setError(err instanceof Error ? err.message : 'An error occurred while loading menu items')
+      }
+      // Use empty menu items as fallback
+      setMenuItems([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return { menuItems, loading, error, refetch }
 }
