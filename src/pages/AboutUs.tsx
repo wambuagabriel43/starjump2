@@ -13,7 +13,7 @@ const AboutUs: React.FC = () => {
 
   const story = getContentWithFallback(pageContent, 'story', {
     title: 'Our Story',
-    content_text: 'Star Jump was born from a simple belief: every child deserves to experience pure joy and wonder. Founded in Nairobi in 2018, we started with a single bouncy castle and a dream to make celebrations unforgettable.\n\nToday, we\'re proud to serve families, schools, malls, and corporations across Kenya with our premium collection of play equipment and professional event services. From intimate birthday parties to large corporate events, we bring the magic of play to every occasion.\n\nOur commitment to safety, quality, and exceptional service has made us Kenya\'s trusted partner for creating memories that last a lifetime.',
+    content_text: 'Star Jump installs and manages Outdoor and Indoor Fun Stations in busy Shopping Malls. Our innovative Play Areas cater to toddlers and children aged between 2-16yrs.Our Play Areas are equipped with fun and safe recreational indoor and outdoor equipment supervised by qualified staff who undergo continuous training in Child Care and Safety.These unique Indoor and Outdoor playgrounds are popular and growing demand has necessitated us to retail and install playgrounds in homes, learning institutions, shopping malls and hospitals.We also offer other fun activities and services such as Kiddie Rides, Bouncy Castles, Slides, Electric Bumper Cars, Video Games, Sports, Water Games, Bungee Trampolines, Climbing Frames and much more..',
     image_url: 'https://images.pexels.com/photos/1104014/pexels-photo-1104014.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&dpr=1',
     metadata: {
       layout: 'right-image'
