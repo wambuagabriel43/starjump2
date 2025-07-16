@@ -103,7 +103,7 @@ const DiagnosticPage: React.FC = () => {
     // Test storage permissions with a small test file
     addLog('Testing storage permissions...');
     try {
-      const testFile = new File(['test'], 'test.txt', { type: 'application/octet-stream' });
+      const testFile = new File(['test'], 'test.txt', { type: 'text/plain' });
       const { data, error } = await supabase.storage
         .from('general-uploads')
         .upload(`test-${Date.now()}.txt`, testFile);
