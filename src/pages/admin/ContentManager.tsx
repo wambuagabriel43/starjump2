@@ -90,12 +90,19 @@ const ContentManager: React.FC = () => {
     { value: 'business_hours_section', label: 'Business Hours' },
     { value: 'client_types_grid', label: 'Client Types Grid' },
     { value: 'cta', label: 'Call to Action' },
-    { value: 'cta_section', label: 'CTA Section' },
+    { value: 'cta_section', label: 'CTA Section' }
+  ];
+
+  const handleSavePageContent = async () => {
+    console.log('[ContentManager] Starting to save page content:', formData);
+    setIsSaving(true);
+    try {
+      if (isAddingNew) {
         // First ensure the page exists in page_content table
         const { data: pageData, error: pageError } = await supabase
           .from('page_content')
           .select('id')
-          .eq('page_slug', selectedPageSlug)
+          .eq('page_slug', selectedPage)
           .maybeSingle();
 
         let pageId = pageData?.id;
@@ -105,10 +112,10 @@ const ContentManager: React.FC = () => {
           const { data: newPageData, error: createPageError } = await supabase
             .from('page_content')
             .insert([{
-              page_slug: selectedPageSlug,
+              page_slug: selectedPage,
               content_data: {},
-              meta_title: selectedPageSlug.charAt(0).toUpperCase() + selectedPageSlug.slice(1),
-              meta_description: `${selectedPageSlug} page content`,
+              meta_title: selectedPage.charAt(0).toUpperCase() + selectedPage.slice(1),
+              meta_description: `${selectedPage} page content`,
               status: 'published'
             }])
             .select('id')
@@ -123,24 +130,23 @@ const ContentManager: React.FC = () => {
           .from('page_sections')
           .insert([{
             page_id: pageId,
-            section_type: pageContentForm.content_type,
-            title: pageContentForm.title,
-            subtitle: pageContentForm.subtitle,
-            content_text: pageContentForm.content_text,
-            image_url: pageContentForm.image_url,
+            section_type: formData.content_type,
+            title: formData.title,
+            subtitle: formData.subtitle,
+            content_text: formData.content_text,
+            image_url: formData.image_url,
             settings: {
-        const { error } = await supabase
-          .from('page_sections')
-          .update({
-            section_type: pageContentForm.content_type,
+              button_text: formData.button_text,
+              button_link: formData.button_link
+            },
+            order_position: formData.order_position,
+            active: formData.active
           }]);
         
         if (error) throw error;
         console.log('[ContentManager] Page content added successfully');
-            settings: {
-              button_text: pageContentForm.button_text,
-              button_link: pageContentForm.button_link
-            },
+        alert('Content added successfully!');
+      } else if (editingContent) {
         const { error } = await supabase
           .from('page_content_blocks')
           .update(formData)
