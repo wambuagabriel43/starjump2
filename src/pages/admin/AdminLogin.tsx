@@ -90,16 +90,16 @@ const AdminLogin: React.FC = () => {
               <label htmlFor="password" className="flex items-center text-royal-blue font-semibold">
                 <Lock className="h-5 w-5 mr-2" />
                 Password
-                  Email
+              </label>
               <div className="relative">
                 <input
-                  type="email"
+                  type={showPassword ? 'text' : 'password'}
                   id="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   className="w-full px-4 py-3 pr-12 border-2 border-gray-200 rounded-xl focus:border-royal-blue focus:ring-2 focus:ring-royal-blue/20 transition-colors duration-300 outline-none"
-                  placeholder="admin@starjump.co.ke"
+                  placeholder="Enter your password"
                 />
                 <button
                   type="button"
