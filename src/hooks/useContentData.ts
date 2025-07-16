@@ -1,23 +1,33 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
+// Debug logging function
+const debugLog = (message: string, data?: any) => {
+  console.log(`[ContentData] ${message}`, data || '');
+};
 // Add a global state manager for content updates
 const contentUpdateListeners = new Map<string, Set<() => void>>();
 
 export const notifyContentUpdate = (key: string) => {
+  debugLog(`Notifying content update for key: ${key}`);
   const listeners = contentUpdateListeners.get(key);
   if (listeners) {
+    debugLog(`Found ${listeners.size} listeners for key: ${key}`);
     listeners.forEach(listener => listener());
+  } else {
+    debugLog(`No listeners found for key: ${key}`);
   }
 };
 
 export const subscribeToContentUpdates = (key: string, callback: () => void) => {
+  debugLog(`Subscribing to content updates for key: ${key}`);
   if (!contentUpdateListeners.has(key)) {
     contentUpdateListeners.set(key, new Set());
   }
   contentUpdateListeners.get(key)!.add(callback);
   
   return () => {
+    debugLog(`Unsubscribing from content updates for key: ${key}`);
     const listeners = contentUpdateListeners.get(key);
     if (listeners) {
       listeners.delete(callback);
@@ -103,12 +113,13 @@ export const usePageContent = (pageSlug: string, sectionKey?: string) => {
 
   useEffect(() => {
     const fetchContent = async () => {
+      debugLog(`Starting fetch for page: ${pageSlug}, section: ${sectionKey || 'all'}`);
       setLoading(true)
       setError(null)
       try {
         // Check if Supabase is configured
         if (!supabase) {
-          console.warn('Supabase not configured, using empty content')
+          debugLog('Supabase not configured, using empty content');
           setContent([])
           setLoading(false)
           return
@@ -128,14 +139,14 @@ export const usePageContent = (pageSlug: string, sectionKey?: string) => {
         const { data, error } = await query
 
         if (error) {
-          console.error('Error fetching page content:', error)
+          debugLog('Error fetching page content:', error);
           throw error
         }
         
-        console.log(`Fetched ${data?.length || 0} content blocks for page: ${pageSlug}`)
+        debugLog(`Successfully fetched ${data?.length || 0} content blocks for page: ${pageSlug}`, data);
         setContent(data || [])
       } catch (err) {
-        console.error('Error fetching page content:', err)
+        debugLog('Exception fetching page content:', err);
         setError(err instanceof Error ? err.message : 'An error occurred')
         setContent([])
       } finally {
@@ -149,7 +160,7 @@ export const usePageContent = (pageSlug: string, sectionKey?: string) => {
   // Subscribe to content updates
   useEffect(() => {
     const unsubscribe = subscribeToContentUpdates(`page_${pageSlug}`, () => {
-      console.log(`Content update notification received for page: ${pageSlug}`)
+      debugLog(`Content update notification received for page: ${pageSlug}`);
       setRefreshTrigger(prev => prev + 1)
     })
     
@@ -157,7 +168,7 @@ export const usePageContent = (pageSlug: string, sectionKey?: string) => {
   }, [pageSlug])
 
   const refetch = async () => {
-    console.log(`Manual refetch triggered for page: ${pageSlug}`)
+    debugLog(`Manual refetch triggered for page: ${pageSlug}`);
     setLoading(true)
     setError(null)
     try {
@@ -182,14 +193,14 @@ export const usePageContent = (pageSlug: string, sectionKey?: string) => {
       const { data, error } = await query
 
       if (error) {
-        console.error('Error refetching page content:', error)
+        debugLog('Error refetching page content:', error);
         throw error
       }
       
-      console.log(`Refetched ${data?.length || 0} content blocks for page: ${pageSlug}`)
+      debugLog(`Successfully refetched ${data?.length || 0} content blocks for page: ${pageSlug}`, data);
       setContent(data || [])
     } catch (err) {
-      console.error('Error refetching page content:', err)
+      debugLog('Exception refetching page content:', err);
       setError(err instanceof Error ? err.message : 'An error occurred')
       setContent([])
     } finally {

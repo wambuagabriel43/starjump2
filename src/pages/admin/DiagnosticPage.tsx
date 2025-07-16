@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { AlertTriangle, CheckCircle, XCircle, Database, Upload, Settings } from 'lucide-react';
+import { testSupabaseConnection } from '../../lib/supabase';
 
 const DiagnosticPage: React.FC = () => {
   const [diagnostics, setDiagnostics] = useState({
@@ -10,6 +11,8 @@ const DiagnosticPage: React.FC = () => {
     storagePermissions: 'checking',
     siteSettings: 'checking',
     envVariables: 'checking'
+    contentSystem: 'checking',
+    realTimeUpdates: 'checking'
   });
 
   const [logs, setLogs] = useState<string[]>([]);
@@ -148,8 +151,68 @@ const DiagnosticPage: React.FC = () => {
     }
 
     addLog('Diagnostics complete');
+    
+    // Test content system
+    await testContentSystem();
   };
 
+  // Test content system
+  const testContentSystem = async () => {
+    addLog('Testing content system...');
+    try {
+      // Test page content fetch
+      const { data: pageData, error: pageError } = await supabase
+        .from('page_content_blocks')
+        .select('*')
+        .eq('page_slug', 'about')
+        .limit(1);
+      
+      if (pageError) {
+        setDiagnostics(prev => ({ ...prev, contentSystem: 'error' }));
+        addLog(`Content system ERROR: ${pageError.message}`);
+      } else {
+        setDiagnostics(prev => ({ ...prev, contentSystem: 'success' }));
+        addLog(`Content system working, found ${pageData?.length || 0} records`);
+      }
+
+      // Test real-time updates
+      const testUpdate = {
+        page_slug: 'test',
+        section_key: 'test_section',
+        content_type: 'text',
+        title: 'Test Update',
+        content_text: 'Testing real-time updates',
+        order_position: 999,
+        active: true
+      };
+
+      const { data: insertData, error: insertError } = await supabase
+        .from('page_content_blocks')
+        .insert([testUpdate])
+        .select()
+        .single();
+
+      if (insertError) {
+        setDiagnostics(prev => ({ ...prev, realTimeUpdates: 'error' }));
+        addLog(`Real-time updates ERROR: ${insertError.message}`);
+      } else {
+        addLog('Test content inserted successfully');
+        
+        // Clean up test data
+        await supabase
+          .from('page_content_blocks')
+          .delete()
+          .eq('id', insertData.id);
+        
+        setDiagnostics(prev => ({ ...prev, realTimeUpdates: 'success' }));
+        addLog('Real-time updates test completed successfully');
+      }
+
+    } catch (err) {
+      setDiagnostics(prev => ({ ...prev, contentSystem: 'error', realTimeUpdates: 'error' }));
+      addLog(`Content system EXCEPTION: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
+  };
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'success': return <CheckCircle className="h-5 w-5 text-green-600" />;
@@ -254,6 +317,32 @@ const DiagnosticPage: React.FC = () => {
               {getStatusIcon(diagnostics.siteSettings)}
               <span className={`font-medium ${getStatusColor(diagnostics.siteSettings)}`}>
                 {diagnostics.siteSettings}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div className="flex items-center space-x-3">
+              <Database className="h-5 w-5 text-royal-blue" />
+              <span className="font-medium">Content System</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              {getStatusIcon(diagnostics.contentSystem)}
+              <span className={`font-medium ${getStatusColor(diagnostics.contentSystem)}`}>
+                {diagnostics.contentSystem}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div className="flex items-center space-x-3">
+              <Settings className="h-5 w-5 text-royal-blue" />
+              <span className="font-medium">Real-time Updates</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              {getStatusIcon(diagnostics.realTimeUpdates)}
+              <span className={`font-medium ${getStatusColor(diagnostics.realTimeUpdates)}`}>
+                {diagnostics.realTimeUpdates}
               </span>
             </div>
           </div>

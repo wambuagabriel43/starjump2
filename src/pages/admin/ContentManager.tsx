@@ -61,6 +61,7 @@ const ContentManager: React.FC = () => {
   ];
 
   const handleSavePageContent = async () => {
+    console.log('[ContentManager] Starting to save page content:', formData);
     setIsSaving(true);
     try {
       if (isAddingNew) {
@@ -72,7 +73,7 @@ const ContentManager: React.FC = () => {
           }]);
         
         if (error) throw error;
-        console.log('Page content added successfully');
+        console.log('[ContentManager] Page content added successfully');
         alert('Content added successfully!');
       } else if (editingContent) {
         const { error } = await supabase
@@ -81,7 +82,7 @@ const ContentManager: React.FC = () => {
           .eq('id', editingContent.id);
         
         if (error) throw error;
-        console.log('Page content updated successfully');
+        console.log('[ContentManager] Page content updated successfully');
         alert('Content updated successfully!');
       }
       
@@ -89,10 +90,11 @@ const ContentManager: React.FC = () => {
       refetchPage();
       
       // Notify all components using this page's content to refresh
+      console.log('[ContentManager] Notifying content update for page:', selectedPage);
       notifyContentUpdate(`page_${selectedPage}`);
       
     } catch (err) {
-      console.error('Error saving page content:', err);
+      console.error('[ContentManager] Error saving page content:', err);
       alert('Error saving content: ' + (err instanceof Error ? err.message : 'Unknown error'));
     } finally {
       setIsSaving(false);
@@ -127,6 +129,7 @@ const ContentManager: React.FC = () => {
       // Notify all components using site content to refresh
       notifyContentUpdate('site_content');
       
+      console.log('[ContentManager] Site content saved and notification sent');
     } catch (err) {
       console.error('Error saving site content:', err);
       alert('Error saving site content: ' + (err instanceof Error ? err.message : 'Unknown error'));

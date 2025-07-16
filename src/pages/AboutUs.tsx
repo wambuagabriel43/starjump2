@@ -7,9 +7,9 @@ const AboutUs: React.FC = () => {
   
   // Debug logging
   React.useEffect(() => {
-    console.log('AboutUs component - pageContent updated:', pageContent.length, 'items');
+    console.log('[AboutUs] Component mounted/updated - pageContent:', pageContent.length, 'items');
     pageContent.forEach((item, index) => {
-      console.log(`Content ${index + 1}:`, item.section_key, '-', item.title);
+      console.log(`[AboutUs] Content ${index + 1}:`, item.section_key, '-', item.title);
     });
   }, [pageContent]);
 
@@ -24,7 +24,7 @@ const AboutUs: React.FC = () => {
   
   // Debug content sections
   React.useEffect(() => {
-    console.log('About Us content sections found:', {
+    console.log('[AboutUs] Content sections found:', {
       hero: !!heroContent,
       story: !!storyContent,
       mission: !!missionContent,
@@ -34,6 +34,11 @@ const AboutUs: React.FC = () => {
       cta: !!ctaContent
     });
   }, [heroContent, storyContent, missionContent, visionContent, valuesContent, teamContent, ctaContent]);
+
+  // Debug loading and error states
+  React.useEffect(() => {
+    console.log('[AboutUs] State update - loading:', loading, 'error:', error, 'content count:', pageContent.length);
+  }, [loading, error, pageContent.length]);
 
   // Render content with fallbacks
   const hero = renderContentByType(heroContent || {
