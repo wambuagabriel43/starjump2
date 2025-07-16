@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Edit, Trash2, Save, X, FileText, Eye, Calendar } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { usePageContent, useSiteContent, useStaticEvents, useBlogPosts, renderContentByType } from '../../hooks/useContentData';
+import { usePageContent, useSiteContent, useStaticEvents, useBlogPosts, renderContentByType, notifyContentUpdate } from '../../hooks/useContentData';
 import type { PageContentBlock, SiteContent, StaticEvent, BlogPost } from '../../hooks/useContentData';
 
 const ContentManager: React.FC = () => {
@@ -72,6 +72,7 @@ const ContentManager: React.FC = () => {
           }]);
         
         if (error) throw error;
+        console.log('Page content added successfully');
         alert('Content added successfully!');
       } else if (editingContent) {
         const { error } = await supabase
@@ -80,12 +81,18 @@ const ContentManager: React.FC = () => {
           .eq('id', editingContent.id);
         
         if (error) throw error;
+        console.log('Page content updated successfully');
         alert('Content updated successfully!');
       }
       
       handleCancel();
       refetchPage();
+      
+      // Notify all components using this page's content to refresh
+      notifyContentUpdate(`page_${selectedPage}`);
+      
     } catch (err) {
+      console.error('Error saving page content:', err);
       alert('Error saving content: ' + (err instanceof Error ? err.message : 'Unknown error'));
     } finally {
       setIsSaving(false);
@@ -101,6 +108,7 @@ const ContentManager: React.FC = () => {
           .insert([formData]);
         
         if (error) throw error;
+        console.log('Site content added successfully');
         alert('Site content added successfully!');
       } else if (editingContent) {
         const { error } = await supabase
@@ -109,12 +117,18 @@ const ContentManager: React.FC = () => {
           .eq('id', editingContent.id);
         
         if (error) throw error;
+        console.log('Site content updated successfully');
         alert('Site content updated successfully!');
       }
       
       handleCancel();
       refetchSite();
+      
+      // Notify all components using site content to refresh
+      notifyContentUpdate('site_content');
+      
     } catch (err) {
+      console.error('Error saving site content:', err);
       alert('Error saving site content: ' + (err instanceof Error ? err.message : 'Unknown error'));
     } finally {
       setIsSaving(false);
@@ -130,6 +144,7 @@ const ContentManager: React.FC = () => {
           .insert([formData]);
         
         if (error) throw error;
+        console.log('Event added successfully');
         alert('Event added successfully!');
       } else if (editingContent) {
         const { error } = await supabase
@@ -138,12 +153,18 @@ const ContentManager: React.FC = () => {
           .eq('id', editingContent.id);
         
         if (error) throw error;
+        console.log('Event updated successfully');
         alert('Event updated successfully!');
       }
       
       handleCancel();
       refetchEvents();
+      
+      // Notify all components using static events to refresh
+      notifyContentUpdate('static_events');
+      
     } catch (err) {
+      console.error('Error saving event:', err);
       alert('Error saving event: ' + (err instanceof Error ? err.message : 'Unknown error'));
     } finally {
       setIsSaving(false);
@@ -159,6 +180,7 @@ const ContentManager: React.FC = () => {
           .insert([formData]);
         
         if (error) throw error;
+        console.log('Blog post added successfully');
         alert('Blog post added successfully!');
       } else if (editingContent) {
         const { error } = await supabase
@@ -167,12 +189,18 @@ const ContentManager: React.FC = () => {
           .eq('id', editingContent.id);
         
         if (error) throw error;
+        console.log('Blog post updated successfully');
         alert('Blog post updated successfully!');
       }
       
       handleCancel();
       refetchBlog();
+      
+      // Notify all components using blog posts to refresh
+      notifyContentUpdate('blog_posts');
+      
     } catch (err) {
+      console.error('Error saving blog post:', err);
       alert('Error saving blog post: ' + (err instanceof Error ? err.message : 'Unknown error'));
     } finally {
       setIsSaving(false);
@@ -189,9 +217,23 @@ const ContentManager: React.FC = () => {
         .eq('id', id);
       
       if (error) throw error;
+      console.log(`Item deleted from ${table} successfully`);
       alert('Item deleted successfully!');
       refetchFn();
+      
+      // Notify components to refresh based on table
+      if (table === 'page_content_blocks') {
+        notifyContentUpdate(`page_${selectedPage}`);
+      } else if (table === 'site_content') {
+        notifyContentUpdate('site_content');
+      } else if (table === 'static_events') {
+        notifyContentUpdate('static_events');
+      } else if (table === 'blog_posts') {
+        notifyContentUpdate('blog_posts');
+      }
+      
     } catch (err) {
+      console.error(`Error deleting from ${table}:`, err);
       alert('Error deleting item: ' + (err instanceof Error ? err.message : 'Unknown error'));
     }
   };

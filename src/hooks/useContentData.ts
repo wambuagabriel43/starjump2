@@ -1,6 +1,30 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
+// Add a global state manager for content updates
+const contentUpdateListeners = new Map<string, Set<() => void>>();
+
+export const notifyContentUpdate = (key: string) => {
+  const listeners = contentUpdateListeners.get(key);
+  if (listeners) {
+    listeners.forEach(listener => listener());
+  }
+};
+
+export const subscribeToContentUpdates = (key: string, callback: () => void) => {
+  if (!contentUpdateListeners.has(key)) {
+    contentUpdateListeners.set(key, new Set());
+  }
+  contentUpdateListeners.get(key)!.add(callback);
+  
+  return () => {
+    const listeners = contentUpdateListeners.get(key);
+    if (listeners) {
+      listeners.delete(callback);
+    }
+  };
+};
+
 // Enhanced types for comprehensive content management
 export interface PageContentBlock {
   id: string
@@ -75,6 +99,7 @@ export const usePageContent = (pageSlug: string, sectionKey?: string) => {
   const [content, setContent] = useState<PageContentBlock[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
 
   useEffect(() => {
     const fetchContent = async () => {
@@ -106,6 +131,8 @@ export const usePageContent = (pageSlug: string, sectionKey?: string) => {
           console.error('Error fetching page content:', error)
           throw error
         }
+        
+        console.log(`Fetched ${data?.length || 0} content blocks for page: ${pageSlug}`)
         setContent(data || [])
       } catch (err) {
         console.error('Error fetching page content:', err)
@@ -117,9 +144,20 @@ export const usePageContent = (pageSlug: string, sectionKey?: string) => {
     }
 
     fetchContent()
-  }, [pageSlug, sectionKey])
+  }, [pageSlug, sectionKey, refreshTrigger])
+
+  // Subscribe to content updates
+  useEffect(() => {
+    const unsubscribe = subscribeToContentUpdates(`page_${pageSlug}`, () => {
+      console.log(`Content update notification received for page: ${pageSlug}`)
+      setRefreshTrigger(prev => prev + 1)
+    })
+    
+    return unsubscribe
+  }, [pageSlug])
 
   const refetch = async () => {
+    console.log(`Manual refetch triggered for page: ${pageSlug}`)
     setLoading(true)
     setError(null)
     try {
@@ -147,6 +185,8 @@ export const usePageContent = (pageSlug: string, sectionKey?: string) => {
         console.error('Error refetching page content:', error)
         throw error
       }
+      
+      console.log(`Refetched ${data?.length || 0} content blocks for page: ${pageSlug}`)
       setContent(data || [])
     } catch (err) {
       console.error('Error refetching page content:', err)
@@ -165,6 +205,7 @@ export const useStaticEvents = () => {
   const [events, setEvents] = useState<StaticEvent[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -188,6 +229,8 @@ export const useStaticEvents = () => {
           console.error('Error fetching static events:', error)
           throw error
         }
+        
+        console.log(`Fetched ${data?.length || 0} static events`)
         setEvents(data || [])
       } catch (err) {
         console.error('Error fetching static events:', err)
@@ -199,9 +242,20 @@ export const useStaticEvents = () => {
     }
 
     fetchEvents()
+  }, [refreshTrigger])
+
+  // Subscribe to content updates
+  useEffect(() => {
+    const unsubscribe = subscribeToContentUpdates('static_events', () => {
+      console.log('Static events update notification received')
+      setRefreshTrigger(prev => prev + 1)
+    })
+    
+    return unsubscribe
   }, [])
 
   const refetch = async () => {
+    console.log('Manual refetch triggered for static events')
     setLoading(true)
     setError(null)
     try {
@@ -222,6 +276,8 @@ export const useStaticEvents = () => {
         console.error('Error refetching static events:', error)
         throw error
       }
+      
+      console.log(`Refetched ${data?.length || 0} static events`)
       setEvents(data || [])
     } catch (err) {
       console.error('Error refetching static events:', err)
@@ -240,6 +296,7 @@ export const useSiteContent = (contentKey?: string) => {
   const [content, setContent] = useState<SiteContent[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
 
   useEffect(() => {
     const fetchContent = async () => {
@@ -268,6 +325,8 @@ export const useSiteContent = (contentKey?: string) => {
           console.error('Error fetching site content:', error)
           throw error
         }
+        
+        console.log(`Fetched ${data?.length || 0} site content items`)
         setContent(data || [])
       } catch (err) {
         console.error('Error fetching site content:', err)
@@ -279,9 +338,20 @@ export const useSiteContent = (contentKey?: string) => {
     }
 
     fetchContent()
-  }, [contentKey])
+  }, [contentKey, refreshTrigger])
+
+  // Subscribe to content updates
+  useEffect(() => {
+    const unsubscribe = subscribeToContentUpdates('site_content', () => {
+      console.log('Site content update notification received')
+      setRefreshTrigger(prev => prev + 1)
+    })
+    
+    return unsubscribe
+  }, [])
 
   const refetch = async () => {
+    console.log('Manual refetch triggered for site content')
     setLoading(true)
     setError(null)
     try {
@@ -307,6 +377,8 @@ export const useSiteContent = (contentKey?: string) => {
         console.error('Error refetching site content:', error)
         throw error
       }
+      
+      console.log(`Refetched ${data?.length || 0} site content items`)
       setContent(data || [])
     } catch (err) {
       console.error('Error refetching site content:', err)
@@ -325,6 +397,7 @@ export const useBlogPosts = () => {
   const [posts, setPosts] = useState<BlogPost[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -348,6 +421,8 @@ export const useBlogPosts = () => {
           console.error('Error fetching blog posts:', error)
           throw error
         }
+        
+        console.log(`Fetched ${data?.length || 0} blog posts`)
         setPosts(data || [])
       } catch (err) {
         console.error('Error fetching blog posts:', err)
@@ -359,9 +434,20 @@ export const useBlogPosts = () => {
     }
 
     fetchPosts()
+  }, [refreshTrigger])
+
+  // Subscribe to content updates
+  useEffect(() => {
+    const unsubscribe = subscribeToContentUpdates('blog_posts', () => {
+      console.log('Blog posts update notification received')
+      setRefreshTrigger(prev => prev + 1)
+    })
+    
+    return unsubscribe
   }, [])
 
   const refetch = async () => {
+    console.log('Manual refetch triggered for blog posts')
     setLoading(true)
     setError(null)
     try {
@@ -382,6 +468,8 @@ export const useBlogPosts = () => {
         console.error('Error refetching blog posts:', error)
         throw error
       }
+      
+      console.log(`Refetched ${data?.length || 0} blog posts`)
       setPosts(data || [])
     } catch (err) {
       console.error('Error refetching blog posts:', err)

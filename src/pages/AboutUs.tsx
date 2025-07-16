@@ -4,6 +4,14 @@ import { usePageContent, renderContentByType } from '../hooks/useContentData';
 
 const AboutUs: React.FC = () => {
   const { content: pageContent, loading, error } = usePageContent('about');
+  
+  // Debug logging
+  React.useEffect(() => {
+    console.log('AboutUs component - pageContent updated:', pageContent.length, 'items');
+    pageContent.forEach((item, index) => {
+      console.log(`Content ${index + 1}:`, item.section_key, '-', item.title);
+    });
+  }, [pageContent]);
 
   // Get content sections
   const heroContent = pageContent.find(c => c.section_key === 'hero');
@@ -13,6 +21,19 @@ const AboutUs: React.FC = () => {
   const valuesContent = pageContent.find(c => c.section_key === 'values');
   const teamContent = pageContent.find(c => c.section_key === 'team');
   const ctaContent = pageContent.find(c => c.section_key === 'cta');
+  
+  // Debug content sections
+  React.useEffect(() => {
+    console.log('About Us content sections found:', {
+      hero: !!heroContent,
+      story: !!storyContent,
+      mission: !!missionContent,
+      vision: !!visionContent,
+      values: !!valuesContent,
+      team: !!teamContent,
+      cta: !!ctaContent
+    });
+  }, [heroContent, storyContent, missionContent, visionContent, valuesContent, teamContent, ctaContent]);
 
   // Render content with fallbacks
   const hero = renderContentByType(heroContent || {

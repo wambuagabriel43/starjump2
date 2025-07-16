@@ -78,6 +78,11 @@ const Header: React.FC = () => {
       </header>
     );
   }
+  
+  // Add refresh button for testing (remove in production)
+  const handleRefresh = () => {
+    window.location.reload();
+  };
 
   return (
     <>
