@@ -157,7 +157,7 @@ export const usePageContent = (pageSlug: string, sectionKey?: string) => {
         let query = supabase
           .from('page_sections')
           .select('*')
-          .eq('page_slug', pageSlug)
+          .eq('page_id', pageSlug)
           .eq('active', true)
           .order('order_position', { ascending: true })
 
