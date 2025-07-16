@@ -131,6 +131,20 @@ const SiteCustomizationManager: React.FC = () => {
     }
   };
 
+  const handleUpdateAssetSize = async (assetId: string, width: number, height: number) => {
+    try {
+      const { error } = await supabase
+        .from('site_assets')
+        .update({ width, height })
+        .eq('id', assetId);
+
+      if (error) throw error;
+      refetchAssets();
+    } catch (err) {
+      console.error('Error updating size:', err);
+    }
+  };
+
   const handleBackgroundColorChange = async (settingKey: string, color: string) => {
     try {
       // Use the upsert function for reliable updates
@@ -170,6 +184,183 @@ const SiteCustomizationManager: React.FC = () => {
 
     handleUpdateAssetPosition(draggedAsset.id, Math.round(x), Math.round(y));
     setDraggedAsset(null);
+  };
+
+  // Resizable Footer Image Component
+  const ResizableFooterImage: React.FC<{
+    asset: SiteAsset;
+    onDelete: (asset: SiteAsset) => void;
+    onMove: (id: string, x: number, y: number) => void;
+    onResize: (id: string, width: number, height: number) => void;
+    onDragStart: (e: React.DragEvent, asset: SiteAsset) => void;
+  }> = ({ asset, onDelete, onMove, onResize, onDragStart }) => {
+    const [isResizing, setIsResizing] = useState(false);
+    const [resizeHandle, setResizeHandle] = useState<string | null>(null);
+    const [startPos, setStartPos] = useState({ x: 0, y: 0 });
+    const [startSize, setStartSize] = useState({ width: 0, height: 0 });
+
+    const currentWidth = asset.width || 80;
+    const currentHeight = asset.height || 80;
+
+    const handleResizeStart = (e: React.MouseEvent, handle: string) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsResizing(true);
+      setResizeHandle(handle);
+      setStartPos({ x: e.clientX, y: e.clientY });
+      setStartSize({ width: currentWidth, height: currentHeight });
+    };
+
+    const handleResizeMove = (e: MouseEvent) => {
+      if (!isResizing || !resizeHandle) return;
+
+      const deltaX = e.clientX - startPos.x;
+      const deltaY = e.clientY - startPos.y;
+      
+      let newWidth = startSize.width;
+      let newHeight = startSize.height;
+      
+      // Calculate new dimensions based on handle
+      if (resizeHandle.includes('right')) {
+        newWidth = Math.max(40, startSize.width + deltaX);
+      }
+      if (resizeHandle.includes('left')) {
+        newWidth = Math.max(40, startSize.width - deltaX);
+      }
+      if (resizeHandle.includes('bottom')) {
+        newHeight = Math.max(40, startSize.height + deltaY);
+      }
+      if (resizeHandle.includes('top')) {
+        newHeight = Math.max(40, startSize.height - deltaY);
+      }
+
+      // Maintain aspect ratio for corner handles
+      if (resizeHandle.includes('corner')) {
+        const aspectRatio = startSize.width / startSize.height;
+        if (Math.abs(deltaX) > Math.abs(deltaY)) {
+          newHeight = newWidth / aspectRatio;
+        } else {
+          newWidth = newHeight * aspectRatio;
+        }
+      }
+
+      // Apply size limits
+      newWidth = Math.min(200, Math.max(40, newWidth));
+      newHeight = Math.min(200, Math.max(40, newHeight));
+
+      onResize(asset.id, Math.round(newWidth), Math.round(newHeight));
+    };
+
+    const handleResizeEnd = () => {
+      setIsResizing(false);
+      setResizeHandle(null);
+    };
+
+    React.useEffect(() => {
+      if (isResizing) {
+        document.addEventListener('mousemove', handleResizeMove);
+        document.addEventListener('mouseup', handleResizeEnd);
+        return () => {
+          document.removeEventListener('mousemove', handleResizeMove);
+          document.removeEventListener('mouseup', handleResizeEnd);
+        };
+      }
+    }, [isResizing, resizeHandle, startPos, startSize]);
+
+    return (
+      <div
+        className="absolute cursor-move group"
+        style={{
+          left: asset.position_x,
+          top: asset.position_y,
+          zIndex: asset.z_index,
+          width: currentWidth,
+          height: currentHeight
+        }}
+        draggable={!isResizing}
+        onDragStart={(e) => !isResizing && onDragStart(e, asset)}
+      >
+        <img 
+          src={asset.image_url} 
+          alt="Footer image" 
+          className="w-full h-full object-contain border border-white shadow-sm rounded"
+          style={{ pointerEvents: isResizing ? 'none' : 'auto' }}
+          onError={(e) => {
+            console.error('Footer image failed to load:', asset.image_url);
+            e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik00MCAyMEw1MCAzMEgzMEw0MCAyMFoiIGZpbGw9IiM5QjlCQTAiLz4KPHA+PC9wYXRoPgo8L3N2Zz4K';
+          }}
+        />
+        
+        {/* Delete Button */}
+        <button
+          onClick={() => onDelete(asset)}
+          className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-all duration-200 z-10"
+          title="Delete image"
+        >
+          <Trash2 className="h-3 w-3" />
+        </button>
+        
+        {/* Reset Size Button */}
+        <button
+          onClick={() => onResize(asset.id, 80, 80)}
+          className="absolute -top-2 -left-2 bg-blue-500 hover:bg-blue-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-all duration-200 z-10"
+          title="Reset to original size"
+        >
+          <RotateCcw className="h-3 w-3" />
+        </button>
+
+        {/* Resize Handles */}
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+          {/* Corner handles */}
+          <div
+            className="absolute -top-1 -left-1 w-3 h-3 bg-blue-500 border border-white rounded-full cursor-nw-resize"
+            onMouseDown={(e) => handleResizeStart(e, 'corner-top-left')}
+          />
+          <div
+            className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 border border-white rounded-full cursor-ne-resize"
+            onMouseDown={(e) => handleResizeStart(e, 'corner-top-right')}
+          />
+          <div
+            className="absolute -bottom-1 -left-1 w-3 h-3 bg-blue-500 border border-white rounded-full cursor-sw-resize"
+            onMouseDown={(e) => handleResizeStart(e, 'corner-bottom-left')}
+          />
+          <div
+            className="absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 border border-white rounded-full cursor-se-resize"
+            onMouseDown={(e) => handleResizeStart(e, 'corner-bottom-right')}
+          />
+          
+          {/* Edge handles */}
+          <div
+            className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-3 h-2 bg-blue-500 border border-white rounded cursor-n-resize"
+            onMouseDown={(e) => handleResizeStart(e, 'edge-top')}
+          />
+          <div
+            className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-3 h-2 bg-blue-500 border border-white rounded cursor-s-resize"
+            onMouseDown={(e) => handleResizeStart(e, 'edge-bottom')}
+          />
+          <div
+            className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-2 h-3 bg-blue-500 border border-white rounded cursor-w-resize"
+            onMouseDown={(e) => handleResizeStart(e, 'edge-left')}
+          />
+          <div
+            className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-2 h-3 bg-blue-500 border border-white rounded cursor-e-resize"
+            onMouseDown={(e) => handleResizeStart(e, 'edge-right')}
+          />
+        </div>
+
+        {/* Size Info */}
+        <div className="absolute -bottom-6 left-0 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+          {isResizing ? (
+            <span>Resizing: {currentWidth}×{currentHeight}px</span>
+          ) : (
+            <>
+              <Move className="h-3 w-3 inline mr-1" />
+              Drag to move • Drag corners to resize
+            </>
+          )}
+        </div>
+      </div>
+    );
   };
 
   if (assetsLoading || settingsLoading) {
@@ -432,40 +623,14 @@ const SiteCustomizationManager: React.FC = () => {
           <p className="absolute top-2 left-2 text-sm text-gray-500">Footer Preview Area (Drag images to position)</p>
           
           {assets.filter(asset => asset.asset_type === 'footer_image').map((asset) => (
-            <div
+            <ResizableFooterImage
               key={asset.id}
-              className="absolute cursor-move"
-              style={{
-                left: asset.position_x,
-                top: asset.position_y,
-                zIndex: asset.z_index
-              }}
-              draggable
-              onDragStart={(e) => handleDragStart(e, asset)}
-            >
-              <div className="relative group">
-                <img 
-                  src={asset.image_url} 
-                  alt="Footer image" 
-                  className="max-w-20 max-h-20 object-contain border border-white shadow-sm rounded"
-                  onError={(e) => {
-                    console.error('Footer image failed to load:', asset.image_url);
-                    e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik00MCAyMEw1MCAzMEgzMEw0MCAyMFoiIGZpbGw9IiM5QjlCQTAiLz4KPHA+PC9wYXRoPgo8L3N2Zz4K';
-                  }}
-                />
-                <button
-                  onClick={() => handleDeleteAsset(asset)}
-                  className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-all duration-200"
-                  title="Delete image"
-                >
-                  <Trash2 className="h-3 w-3" />
-                </button>
-                <div className="absolute -bottom-6 left-0 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                  <Move className="h-3 w-3 inline mr-1" />
-                  Drag to move
-                </div>
-              </div>
-            </div>
+              asset={asset}
+              onDelete={handleDeleteAsset}
+              onMove={handleUpdateAssetPosition}
+              onResize={handleUpdateAssetSize}
+              onDragStart={handleDragStart}
+            />
           ))}
           
           {assets.filter(asset => asset.asset_type === 'footer_image').length === 0 && (
