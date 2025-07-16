@@ -33,7 +33,7 @@ const InfoSection: React.FC = () => {
 
   // Use default content if no Supabase data
 const content = infoSection || {
-  title: 'hy Choose Star Jump?',
+  title: 'Why Choose Star Jump?',
   subtitle: '',
   content_text: 'Star Jump is the leading play and fitness equipment supplier for outdoor and indoor equipment for educational, commercial and residential use in East Africa.\n\nStar jump offers a comprehensive range of children\'s indoor and outdoor play equipment for all ages. At Star Jump we understand the importance of play, and we are certain you will find solutions that suit your needs and budget.',
   image_url: 'https://images.pexels.com/photos/1104014/pexels-photo-1104014.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&dpr=1',
