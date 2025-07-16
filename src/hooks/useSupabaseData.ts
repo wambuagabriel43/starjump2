@@ -225,7 +225,20 @@ export const useSiteSettings = () => {
 
   useEffect(() => {
     const fetchSettings = async () => {
+      setLoading(true)
+      setError(null)
       try {
+        // Check if Supabase is properly configured
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+        
+        if (!supabaseUrl || !supabaseKey) {
+          console.warn('Supabase not configured, using default settings')
+          setSettings({})
+          setLoading(false)
+          return
+        }
+
         const { data, error } = await supabase
           .from('site_settings')
           .select('*')
@@ -239,7 +252,10 @@ export const useSiteSettings = () => {
         
         setSettings(settingsMap)
       } catch (err) {
+        console.error('Error fetching site settings:', err)
         setError(err instanceof Error ? err.message : 'An error occurred')
+        // Set empty settings as fallback
+        setSettings({})
       } finally {
         setLoading(false)
       }
@@ -248,7 +264,44 @@ export const useSiteSettings = () => {
     fetchSettings()
   }, [])
 
-  return { settings, loading, error, refetch: () => window.location.reload() }
+  const refetch = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      // Check if Supabase is properly configured
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+      
+      if (!supabaseUrl || !supabaseKey) {
+        console.warn('Supabase not configured, using default settings')
+        setSettings({})
+        setLoading(false)
+        return
+      }
+
+      const { data, error } = await supabase
+        .from('site_settings')
+        .select('*')
+
+      if (error) throw error
+      
+      const settingsMap = (data || []).reduce((acc, setting) => {
+        acc[setting.setting_key] = setting.setting_value
+        return acc
+      }, {} as Record<string, string>)
+      
+      setSettings(settingsMap)
+    } catch (err) {
+      console.error('Error refetching site settings:', err)
+      setError(err instanceof Error ? err.message : 'An error occurred')
+      // Set empty settings as fallback
+      setSettings({})
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return { settings, loading, error, refetch }
 }
 
 export const useMenuItems = () => {

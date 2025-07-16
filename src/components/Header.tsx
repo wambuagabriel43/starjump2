@@ -114,16 +114,33 @@ const Header: React.FC = () => {
                 {activeMenuItems.length > 0 ? (
                   activeMenuItems.map((item) => {
                     const menuClass = `menu-${item.label.toLowerCase().replace(/\s+/g, '-')}`;
+                    const hasGraphic = assets.some(asset => 
+                      asset.asset_type === 'menu_graphic' && 
+                      asset.menu_item === item.label && 
+                      asset.active
+                    );
+                    
                     return (
                       <div key={item.id} className="relative">
-                        <div className={`absolute inset-0 bg-star-yellow rounded-full transform scale-110 opacity-80 ${menuClass}`}></div>
-                        <Link
-                          to={item.url}
-                          target={item.target || '_self'}
-                          className="relative px-4 py-2 rounded-full text-themed font-bold text-sm hover:text-royal-blue transition-all duration-300 transform hover:scale-105 z-10"
-                        >
-                          {item.label}
-                        </Link>
+                        {isGraphicsMode && hasGraphic ? (
+                          <Link
+                            to={item.url}
+                            target={item.target || '_self'}
+                            className={`${menuClass} hover:opacity-80 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl`}
+                            title={item.label}
+                          />
+                        ) : (
+                          <>
+                            <div className={`absolute inset-0 bg-star-yellow rounded-full transform scale-110 opacity-80 ${hasGraphic ? menuClass : ''}`}></div>
+                            <Link
+                              to={item.url}
+                              target={item.target || '_self'}
+                              className="relative px-4 py-2 rounded-full text-themed font-bold text-sm hover:text-royal-blue transition-all duration-300 transform hover:scale-105 z-10"
+                            >
+                              {item.label}
+                            </Link>
+                          </>
+                        )}
                       </div>
                     );
                   })
