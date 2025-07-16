@@ -10,7 +10,7 @@ const DiagnosticPage: React.FC = () => {
     storageBuckets: 'checking',
     storagePermissions: 'checking',
     siteSettings: 'checking',
-    envVariables: 'checking'
+    envVariables: 'checking',
     contentSystem: 'checking',
     realTimeUpdates: 'checking'
   });
