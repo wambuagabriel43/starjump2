@@ -30,11 +30,6 @@ const SiteCustomizationManager: React.FC = () => {
       return;
     }
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      alert('Please upload an image file');
-      return;
-    }
 
     setUploading(true);
     try {
@@ -50,7 +45,7 @@ const SiteCustomizationManager: React.FC = () => {
         throw new Error('Failed to get public URL for uploaded file');
       }
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('site_assets')
         .insert([{
           asset_type: assetType,
@@ -62,12 +57,22 @@ const SiteCustomizationManager: React.FC = () => {
           position_y: 0,
           z_index: 1,
           active: true
-        }]);
+        }])
+        .select();
 
       if (error) throw error;
       
       alert('Image uploaded successfully!');
+      
+      // Force refresh of assets to show new upload immediately
       refetchAssets();
+      
+      // Clear the file input
+      const fileInput = document.getElementById(`${assetType}-${menuItem || 'default'}-upload`) as HTMLInputElement;
+      if (fileInput) {
+        fileInput.value = '';
+      }
+      
     } catch (err) {
       console.error('Upload error:', err);
       alert('Error uploading image: ' + (err instanceof Error ? err.message : 'Unknown error'));
@@ -235,8 +240,11 @@ const SiteCustomizationManager: React.FC = () => {
                 id="header-logo-upload"
               />
               <label htmlFor="header-logo-upload" className="cursor-pointer">
-                <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                <p className="text-gray-600">Upload Header Logo</p>
+                <div className="flex flex-col items-center">
+                  <Upload className="h-8 w-8 text-gray-400 mb-2" />
+                  <p className="text-gray-600 text-sm">Upload Header Logo</p>
+                  <p className="text-xs text-gray-500 mt-1">PNG, JPG, SVG (Max 5MB)</p>
+                </div>
               </label>
             </div>
             
@@ -244,15 +252,30 @@ const SiteCustomizationManager: React.FC = () => {
             <div className="mt-4 space-y-2">
               {assets.filter(asset => asset.asset_type === 'logo' && asset.placement_hint === 'header').map((asset) => (
                 <div key={asset.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                  <img src={asset.image_url} alt="Header Logo" className="h-8 w-auto" />
+                  <div className="flex items-center space-x-2">
+                    <img 
+                      src={asset.image_url} 
+                      alt="Header Logo" 
+                      className="h-8 w-auto"
+                      onError={(e) => {
+                        console.error('Logo failed to load:', asset.image_url);
+                        e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xNiA4TDIwIDEySDEyTDE2IDhaIiBmaWxsPSIjOUI5QkEwIi8+CjxwYXRoIGQ9Ik04IDE2TDEyIDIwVjEyTDggMTZaIiBmaWxsPSIjOUI5QkEwIi8+CjxwYXRoIGQ9Ik0yNCAxNkwyMCAyMFYxMkwyNCAxNloiIGZpbGw9IiM5QjlCQTAiLz4KPHA+PC9wYXRoPgo8L3N2Zz4K';
+                      }}
+                    />
+                    <span className="text-xs text-gray-500 truncate max-w-32">{asset.image_url.split('/').pop()}</span>
+                  </div>
                   <button
                     onClick={() => handleDeleteAsset(asset)}
-                    className="text-red-600 hover:text-red-800"
+                    className="text-red-600 hover:text-red-800 p-1 hover:bg-red-50 rounded"
+                    title="Delete logo"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
               ))}
+              {assets.filter(asset => asset.asset_type === 'logo' && asset.placement_hint === 'header').length === 0 && (
+                <p className="text-sm text-gray-500 italic">No header logo uploaded</p>
+              )}
             </div>
           </div>
 
@@ -271,8 +294,11 @@ const SiteCustomizationManager: React.FC = () => {
                 id="footer-logo-upload"
               />
               <label htmlFor="footer-logo-upload" className="cursor-pointer">
-                <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                <p className="text-gray-600">Upload Footer Logo</p>
+                <div className="flex flex-col items-center">
+                  <Upload className="h-8 w-8 text-gray-400 mb-2" />
+                  <p className="text-gray-600 text-sm">Upload Footer Logo</p>
+                  <p className="text-xs text-gray-500 mt-1">PNG, JPG, SVG (Max 5MB)</p>
+                </div>
               </label>
             </div>
             
@@ -283,15 +309,33 @@ const SiteCustomizationManager: React.FC = () => {
                 (asset.placement_hint === 'footer' || asset.menu_item === 'footer')
               ).map((asset) => (
                 <div key={asset.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                  <img src={asset.image_url} alt="Footer Logo" className="h-8 w-auto" />
+                  <div className="flex items-center space-x-2">
+                    <img 
+                      src={asset.image_url} 
+                      alt="Footer Logo" 
+                      className="h-8 w-auto"
+                      onError={(e) => {
+                        console.error('Footer logo failed to load:', asset.image_url);
+                        e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xNiA4TDIwIDEySDEyTDE2IDhaIiBmaWxsPSIjOUI5QkEwIi8+CjxwYXRoIGQ9Ik04IDE2TDEyIDIwVjEyTDggMTZaIiBmaWxsPSIjOUI5QkEwIi8+CjxwYXRoIGQ9Ik0yNCAxNkwyMCAyMFYxMkwyNCAxNloiIGZpbGw9IiM5QjlCQTAiLz4KPHA+PC9wYXRoPgo8L3N2Zz4K';
+                      }}
+                    />
+                    <span className="text-xs text-gray-500 truncate max-w-32">{asset.image_url.split('/').pop()}</span>
+                  </div>
                   <button
                     onClick={() => handleDeleteAsset(asset)}
-                    className="text-red-600 hover:text-red-800"
+                    className="text-red-600 hover:text-red-800 p-1 hover:bg-red-50 rounded"
+                    title="Delete logo"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
               ))}
+              {assets.filter(asset => 
+                asset.asset_type === 'logo' && 
+                (asset.placement_hint === 'footer' || asset.menu_item === 'footer')
+              ).length === 0 && (
+                <p className="text-sm text-gray-500 italic">No footer logo uploaded</p>
+              )}
             </div>
           </div>
         </div>
@@ -317,8 +361,11 @@ const SiteCustomizationManager: React.FC = () => {
                   id={`menu-${menuItem.replace(/\s+/g, '-').toLowerCase()}-upload`}
                 />
                 <label htmlFor={`menu-${menuItem.replace(/\s+/g, '-').toLowerCase()}-upload`} className="cursor-pointer">
-                  <ImageIcon className="h-6 w-6 text-gray-400 mx-auto mb-1" />
-                  <p className="text-xs text-gray-600">Upload</p>
+                  <div className="flex flex-col items-center">
+                    <ImageIcon className="h-6 w-6 text-gray-400 mb-1" />
+                    <p className="text-xs text-gray-600">Upload</p>
+                    <p className="text-xs text-gray-400">Max 5MB</p>
+                  </div>
                 </label>
               </div>
               
@@ -326,15 +373,27 @@ const SiteCustomizationManager: React.FC = () => {
               <div className="space-y-1">
                 {assets.filter(asset => asset.asset_type === 'menu_graphic' && asset.menu_item === menuItem).map((asset) => (
                   <div key={asset.id} className="flex items-center justify-between p-1 bg-gray-50 rounded text-xs">
-                    <img src={asset.image_url} alt={`${menuItem} graphic`} className="h-6 w-auto" />
+                    <img 
+                      src={asset.image_url} 
+                      alt={`${menuItem} graphic`} 
+                      className="h-6 w-auto"
+                      onError={(e) => {
+                        console.error('Menu graphic failed to load:', asset.image_url);
+                        e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMiA2TDE1IDlIOUwxMiA2WiIgZmlsbD0iIzlCOUJBMCIvPgo8cGF0aCBkPSJNNiAxMkw5IDE1VjlMNiAxMloiIGZpbGw9IiM5QjlCQTAiLz4KPHA+PC9wYXRoPgo8L3N2Zz4K';
+                      }}
+                    />
                     <button
                       onClick={() => handleDeleteAsset(asset)}
-                      className="text-red-600 hover:text-red-800"
+                      className="text-red-600 hover:text-red-800 p-1 hover:bg-red-50 rounded"
+                      title="Delete graphic"
                     >
                       <Trash2 className="h-3 w-3" />
                     </button>
                   </div>
                 ))}
+                {assets.filter(asset => asset.asset_type === 'menu_graphic' && asset.menu_item === menuItem).length === 0 && (
+                  <p className="text-xs text-gray-400 italic">No graphic</p>
+                )}
               </div>
             </div>
           ))}

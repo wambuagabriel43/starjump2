@@ -154,6 +154,11 @@ export const uploadFile = async (bucket: string, file: File, path?: string) => {
     throw new Error(`File size exceeds limit of ${maxSize / 1048576}MB`)
   }
 
+  // Validate file type
+  if (!file.type.startsWith('image/')) {
+    console.error('Invalid file type:', file.type);
+    throw new Error('Only image files are allowed')
+  }
   console.log('Attempting upload to bucket:', bucket, 'with filename:', fileName);
   
   const { data, error } = await supabase.storage
@@ -169,6 +174,16 @@ export const uploadFile = async (bucket: string, file: File, path?: string) => {
     .getPublicUrl(fileName)
 
   console.log('Generated public URL:', publicUrl);
+  
+  // Verify the URL is accessible
+  try {
+    const response = await fetch(publicUrl, { method: 'HEAD' });
+    if (!response.ok) {
+      console.warn('Uploaded file may not be immediately accessible:', response.status);
+    }
+  } catch (err) {
+    console.warn('Could not verify file accessibility:', err);
+  }
   
   return { fileName: data.path, publicUrl }
 }
