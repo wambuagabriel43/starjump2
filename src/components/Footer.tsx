@@ -64,7 +64,7 @@ const Footer: React.FC = () => {
                   <img 
                     src={footerLogo.image_url} 
                     alt="Star Jump Logo" 
-                    className="h-10 w-auto max-w-32"
+                    className="h-12 w-auto max-w-48 object-contain"
                     onError={(e) => {
                       console.error('Footer logo failed to load:', footerLogo.image_url);
                       e.currentTarget.style.display = 'none';

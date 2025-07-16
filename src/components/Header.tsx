@@ -28,9 +28,11 @@ const Header: React.FC = () => {
       return `
         .menu-${menuClass} {
           background-image: url('${asset.image_url}');
-          background-size: cover;
+          background-size: 60px 60px;
           background-position: center;
           background-repeat: no-repeat;
+          width: 60px;
+          height: 60px;
         }
       `;
     }).join('\n');

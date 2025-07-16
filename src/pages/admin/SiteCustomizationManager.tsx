@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Upload, Save, Trash2, Move, Palette, Image as ImageIcon } from 'lucide-react';
+import { Upload, Save, Trash2, Move, Palette, Image as ImageIcon, RotateCcw } from 'lucide-react';
 import { supabase, uploadFile, deleteFile, SiteAsset } from '../../lib/supabase';
 import { useSiteAssets, useSiteSettings } from '../../hooks/useSupabaseData';
 
