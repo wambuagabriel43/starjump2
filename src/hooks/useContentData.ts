@@ -5,7 +5,8 @@ import { supabase } from '../lib/supabase'
 const debugLog = (message: string, data?: any) => {
   console.log(`[ContentData] ${message}`, data || '');
 };
-// Add a global state manager for content updates
+
+// Global state manager for content updates
 const contentUpdateListeners = new Map<string, Set<() => void>>();
 
 export const notifyContentUpdate = (key: string) => {
@@ -50,6 +51,31 @@ export interface PageContentBlock {
   button_link?: string
   order_position: number
   metadata: any
+  active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface ComponentContent {
+  id: string
+  component_name: string
+  content_key: string
+  content_type: string
+  title?: string
+  content_text?: string
+  image_url?: string
+  metadata: any
+  active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface UILabel {
+  id: string
+  category: string
+  label_key: string
+  label_text: string
+  context?: string
   active: boolean
   created_at: string
   updated_at: string
@@ -169,46 +195,147 @@ export const usePageContent = (pageSlug: string, sectionKey?: string) => {
 
   const refetch = async () => {
     debugLog(`Manual refetch triggered for page: ${pageSlug}`);
-    setLoading(true)
-    setError(null)
-    try {
-      if (!supabase) {
-        console.warn('Supabase not configured, using empty content')
-        setContent([])
-        setLoading(false)
-        return
-      }
-
-      let query = supabase
-        .from('page_content_blocks')
-        .select('*')
-        .eq('page_slug', pageSlug)
-        .eq('active', true)
-        .order('order_position', { ascending: true })
-
-      if (sectionKey) {
-        query = query.eq('section_key', sectionKey)
-      }
-
-      const { data, error } = await query
-
-      if (error) {
-        debugLog('Error refetching page content:', error);
-        throw error
-      }
-      
-      debugLog(`Successfully refetched ${data?.length || 0} content blocks for page: ${pageSlug}`, data);
-      setContent(data || [])
-    } catch (err) {
-      debugLog('Exception refetching page content:', err);
-      setError(err instanceof Error ? err.message : 'An error occurred')
-      setContent([])
-    } finally {
-      setLoading(false)
-    }
+    setRefreshTrigger(prev => prev + 1)
   }
 
   return { content, loading, error, refetch }
+}
+
+// Hook for component content
+export const useComponentContent = (componentName: string, contentKey?: string) => {
+  const [content, setContent] = useState<ComponentContent[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
+
+  useEffect(() => {
+    const fetchContent = async () => {
+      debugLog(`Starting fetch for component: ${componentName}, key: ${contentKey || 'all'}`);
+      setLoading(true)
+      setError(null)
+      try {
+        if (!supabase) {
+          debugLog('Supabase not configured, using empty content');
+          setContent([])
+          setLoading(false)
+          return
+        }
+
+        let query = supabase
+          .from('component_content')
+          .select('*')
+          .eq('component_name', componentName)
+          .eq('active', true)
+
+        if (contentKey) {
+          query = query.eq('content_key', contentKey)
+        }
+
+        const { data, error } = await query
+
+        if (error) {
+          debugLog('Error fetching component content:', error);
+          throw error
+        }
+        
+        debugLog(`Successfully fetched ${data?.length || 0} component content items for: ${componentName}`, data);
+        setContent(data || [])
+      } catch (err) {
+        debugLog('Exception fetching component content:', err);
+        setError(err instanceof Error ? err.message : 'An error occurred')
+        setContent([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchContent()
+  }, [componentName, contentKey, refreshTrigger])
+
+  // Subscribe to content updates
+  useEffect(() => {
+    const unsubscribe = subscribeToContentUpdates(`component_${componentName}`, () => {
+      debugLog(`Component content update notification received for: ${componentName}`);
+      setRefreshTrigger(prev => prev + 1)
+    })
+    
+    return unsubscribe
+  }, [componentName])
+
+  const refetch = async () => {
+    debugLog(`Manual refetch triggered for component: ${componentName}`);
+    setRefreshTrigger(prev => prev + 1)
+  }
+
+  return { content, loading, error, refetch }
+}
+
+// Hook for UI labels
+export const useUILabels = (category?: string) => {
+  const [labels, setLabels] = useState<UILabel[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
+
+  useEffect(() => {
+    const fetchLabels = async () => {
+      debugLog(`Starting fetch for UI labels, category: ${category || 'all'}`);
+      setLoading(true)
+      setError(null)
+      try {
+        if (!supabase) {
+          debugLog('Supabase not configured, using empty labels');
+          setLabels([])
+          setLoading(false)
+          return
+        }
+
+        let query = supabase
+          .from('ui_labels')
+          .select('*')
+          .eq('active', true)
+
+        if (category) {
+          query = query.eq('category', category)
+        }
+
+        const { data, error } = await query
+
+        if (error) {
+          debugLog('Error fetching UI labels:', error);
+          throw error
+        }
+        
+        debugLog(`Successfully fetched ${data?.length || 0} UI labels`, data);
+        setLabels(data || [])
+      } catch (err) {
+        debugLog('Exception fetching UI labels:', err);
+        setError(err instanceof Error ? err.message : 'An error occurred')
+        setLabels([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchLabels()
+  }, [category, refreshTrigger])
+
+  // Subscribe to content updates
+  useEffect(() => {
+    const unsubscribe = subscribeToContentUpdates('ui_labels', () => {
+      debugLog('UI labels update notification received');
+      setRefreshTrigger(prev => prev + 1)
+    })
+    
+    return unsubscribe
+  }, [])
+
+  const refetch = async () => {
+    debugLog('Manual refetch triggered for UI labels');
+    setRefreshTrigger(prev => prev + 1)
+  }
+
+  return { labels, loading, error, refetch }
 }
 
 // Hook for static events
@@ -267,36 +394,7 @@ export const useStaticEvents = () => {
 
   const refetch = async () => {
     console.log('Manual refetch triggered for static events')
-    setLoading(true)
-    setError(null)
-    try {
-      if (!supabase) {
-        console.warn('Supabase not configured, using empty events')
-        setEvents([])
-        setLoading(false)
-        return
-      }
-
-      const { data, error } = await supabase
-        .from('static_events')
-        .select('*')
-        .eq('active', true)
-        .order('date', { ascending: true })
-
-      if (error) {
-        console.error('Error refetching static events:', error)
-        throw error
-      }
-      
-      console.log(`Refetched ${data?.length || 0} static events`)
-      setEvents(data || [])
-    } catch (err) {
-      console.error('Error refetching static events:', err)
-      setError(err instanceof Error ? err.message : 'An error occurred')
-      setEvents([])
-    } finally {
-      setLoading(false)
-    }
+    setRefreshTrigger(prev => prev + 1)
   }
 
   return { events, loading, error, refetch }
@@ -363,41 +461,7 @@ export const useSiteContent = (contentKey?: string) => {
 
   const refetch = async () => {
     console.log('Manual refetch triggered for site content')
-    setLoading(true)
-    setError(null)
-    try {
-      if (!supabase) {
-        console.warn('Supabase not configured, using empty site content')
-        setContent([])
-        setLoading(false)
-        return
-      }
-
-      let query = supabase
-        .from('site_content')
-        .select('*')
-        .eq('active', true)
-
-      if (contentKey) {
-        query = query.eq('content_key', contentKey)
-      }
-
-      const { data, error } = await query
-
-      if (error) {
-        console.error('Error refetching site content:', error)
-        throw error
-      }
-      
-      console.log(`Refetched ${data?.length || 0} site content items`)
-      setContent(data || [])
-    } catch (err) {
-      console.error('Error refetching site content:', err)
-      setError(err instanceof Error ? err.message : 'An error occurred')
-      setContent([])
-    } finally {
-      setLoading(false)
-    }
+    setRefreshTrigger(prev => prev + 1)
   }
 
   return { content, loading, error, refetch }
@@ -459,54 +523,36 @@ export const useBlogPosts = () => {
 
   const refetch = async () => {
     console.log('Manual refetch triggered for blog posts')
-    setLoading(true)
-    setError(null)
-    try {
-      if (!supabase) {
-        console.warn('Supabase not configured, using empty blog posts')
-        setPosts([])
-        setLoading(false)
-        return
-      }
-
-      const { data, error } = await supabase
-        .from('blog_posts')
-        .select('*')
-        .eq('active', true)
-        .order('date', { ascending: false })
-
-      if (error) {
-        console.error('Error refetching blog posts:', error)
-        throw error
-      }
-      
-      console.log(`Refetched ${data?.length || 0} blog posts`)
-      setPosts(data || [])
-    } catch (err) {
-      console.error('Error refetching blog posts:', err)
-      setError(err instanceof Error ? err.message : 'An error occurred')
-      setPosts([])
-    } finally {
-      setLoading(false)
-    }
+    setRefreshTrigger(prev => prev + 1)
   }
 
   return { posts, loading, error, refetch }
 }
 
-// Utility function to get single content item
+// Utility functions
 export const getContentByKey = (content: SiteContent[], key: string): string => {
   const item = content.find(c => c.content_key === key)
   return item?.content_text || ''
 }
 
-// Utility function to get page content by section
 export const getPageContentBySection = (content: PageContentBlock[], sectionKey: string): PageContentBlock | null => {
   return content.find(c => c.section_key === sectionKey) || null
 }
 
+export const getComponentContentByKey = (content: ComponentContent[], key: string): string => {
+  const item = content.find(c => c.content_key === key)
+  return item?.content_text || ''
+}
+
+export const getUILabel = (labels: UILabel[], key: string): string => {
+  const label = labels.find(l => l.label_key === key)
+  return label?.label_text || key
+}
+
 // Utility function to render content based on type
-export const renderContentByType = (content: PageContentBlock) => {
+export const renderContentByType = (content: PageContentBlock | any) => {
+  if (!content) return {}
+  
   switch (content.content_type) {
     case 'hero_section':
       return {
@@ -519,7 +565,7 @@ export const renderContentByType = (content: PageContentBlock) => {
       return {
         title: content.title,
         content: content.content_text,
-        image_url: content.metadata?.image_url,
+        image_url: content.metadata?.image_url || content.image_url,
         layout: content.metadata?.layout || 'left-image'
       }
     case 'values_grid':
@@ -540,7 +586,7 @@ export const renderContentByType = (content: PageContentBlock) => {
         subtitle: content.subtitle,
         services: content.metadata?.services || []
       }
-    case 'contact_info':
+    case 'contact_info_cards':
       return {
         title: content.title,
         cards: content.metadata?.cards || []
@@ -557,11 +603,41 @@ export const renderContentByType = (content: PageContentBlock) => {
         description: content.content_text,
         buttons: content.metadata?.buttons || []
       }
+    case 'features_section':
+      return {
+        title: content.title,
+        subtitle: content.subtitle,
+        features: content.metadata?.features || []
+      }
+    case 'client_types_grid':
+      return {
+        title: content.title,
+        subtitle: content.subtitle,
+        client_types: content.metadata?.client_types || []
+      }
+    case 'business_hours_section':
+      return {
+        title: content.title,
+        hours: content.metadata?.hours || []
+      }
+    case 'legal_section':
+      return {
+        title: content.title,
+        content: content.content_text,
+        types: content.metadata?.types || [],
+        cancellation_policy: content.metadata?.cancellation_policy || []
+      }
+    case 'help_section':
+      return {
+        title: content.title,
+        steps: content.metadata?.steps || []
+      }
     default:
       return {
         title: content.title,
         subtitle: content.subtitle,
-        content: content.content_text
+        content: content.content_text,
+        metadata: content.metadata || {}
       }
   }
 }
