@@ -13,42 +13,25 @@ const AboutUs: React.FC = () => {
     });
   }, [pageContent]);
 
-  // Get content sections
-  const heroContent = pageContent.find(c => c.section_key === 'hero');
-  const storyContent = pageContent.find(c => c.section_key === 'story');
-  const missionContent = pageContent.find(c => c.section_key === 'mission');
-  const visionContent = pageContent.find(c => c.section_key === 'vision');
-  const valuesContent = pageContent.find(c => c.section_key === 'values');
-  const teamContent = pageContent.find(c => c.section_key === 'team');
-  const ctaContent = pageContent.find(c => c.section_key === 'cta');
-  
-  // Debug content sections
-  React.useEffect(() => {
-    console.log('[AboutUs] Content sections found:', {
-      hero: !!heroContent,
-      story: !!storyContent,
-      mission: !!missionContent,
-      vision: !!visionContent,
-      values: !!valuesContent,
-      team: !!teamContent,
-      cta: !!ctaContent
-    });
-  }, [heroContent, storyContent, missionContent, visionContent, valuesContent, teamContent, ctaContent]);
+  // Get content sections with database-first approach
+  const getContentSection = (sectionKey: string, fallback: any = {}) => {
+    const dbContent = pageContent.find(c => c.section_key === sectionKey);
+    if (dbContent) {
+      console.log(`[AboutUs] Using database content for ${sectionKey}:`, dbContent.title);
+      return renderContentByType(dbContent);
+    }
+    console.log(`[AboutUs] Using fallback content for ${sectionKey}`);
+    return renderContentByType({ ...fallback, content_type: fallback.content_type || 'text' });
+  };
 
-  // Debug loading and error states
-  React.useEffect(() => {
-    console.log('[AboutUs] State update - loading:', loading, 'error:', error, 'content count:', pageContent.length);
-  }, [loading, error, pageContent.length]);
-
-  // Render content with fallbacks
-  const hero = renderContentByType(heroContent || {
+  // Get all content sections
+  const hero = getContentSection('hero', {
     title: 'About Star Jump',
     content_text: 'Kenya\'s premier provider of fun stations and children\'s play areas, bringing joy and excitement to every celebration since 2018.',
-    content_type: 'hero_section',
-    metadata: {}
+    content_type: 'hero_section'
   });
 
-  const story = renderContentByType(storyContent || {
+  const story = getContentSection('story', {
     title: 'Our Story',
     content_text: 'Star Jump was born from a simple belief: every child deserves to experience pure joy and wonder. Founded in Nairobi in 2018, we started with a single bouncy castle and a dream to make celebrations unforgettable.\n\nToday, we\'re proud to serve families, schools, malls, and corporations across Kenya with our premium collection of play equipment and professional event services. From intimate birthday parties to large corporate events, we bring the magic of play to every occasion.\n\nOur commitment to safety, quality, and exceptional service has made us Kenya\'s trusted partner for creating memories that last a lifetime.',
     content_type: 'text_with_image',
@@ -58,21 +41,21 @@ const AboutUs: React.FC = () => {
     }
   });
 
-  const mission = renderContentByType(missionContent || {
+  const mission = getContentSection('mission', {
     title: 'Our Mission',
     content_text: 'To create magical play experiences that bring families and communities together, while providing safe, high-quality entertainment solutions that spark joy and imagination in children across Kenya.',
     content_type: 'mission_vision',
     metadata: { type: 'mission', icon: 'Target' }
   });
 
-  const vision = renderContentByType(visionContent || {
+  const vision = getContentSection('vision', {
     title: 'Our Vision',
     content_text: 'To be East Africa\'s leading provider of children\'s entertainment solutions, setting the standard for safety, innovation, and service excellence in the play equipment industry.',
     content_type: 'mission_vision',
     metadata: { type: 'vision', icon: 'Eye' }
   });
 
-  const values = renderContentByType(valuesContent || {
+  const values = getContentSection('values', {
     title: 'Our Values',
     subtitle: 'The principles that guide everything we do at Star Jump',
     content_type: 'values_grid',
@@ -86,7 +69,7 @@ const AboutUs: React.FC = () => {
     }
   });
 
-  const team = renderContentByType(teamContent || {
+  const team = getContentSection('team', {
     title: 'Meet Our Team',
     subtitle: 'The passionate people behind Kenya\'s favorite play experience provider',
     content_type: 'team_grid',
@@ -99,7 +82,7 @@ const AboutUs: React.FC = () => {
     }
   });
 
-  const cta = renderContentByType(ctaContent || {
+  const cta = getContentSection('cta', {
     title: 'Ready to Create Magic?',
     content_text: 'Let\'s work together to make your next event unforgettable. Contact us today for a personalized quote!',
     content_type: 'cta_section',

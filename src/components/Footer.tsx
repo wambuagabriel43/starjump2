@@ -2,11 +2,12 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Star, Facebook, Instagram, Linkedin, MessageCircle, MapPin, Phone, Mail, Clock } from 'lucide-react';
 import { useSiteAssets } from '../hooks/useSupabaseData';
-import { useSiteContent, getContentByKey } from '../hooks/useContentData';
+import { useComponentContent, useSiteContent, getContentByKey, getComponentContentByKey } from '../hooks/useContentData';
 
 const Footer: React.FC = () => {
   const { assets } = useSiteAssets();
   const { content: siteContent, loading: contentLoading } = useSiteContent();
+  const { content: footerContent } = useComponentContent('footer');
   
   // Get footer logo and positioned images
   const footerLogo = assets.find(asset => 
@@ -19,7 +20,15 @@ const Footer: React.FC = () => {
   );
 
   // Get dynamic content
-  const companyDescription = getContentByKey(siteContent, 'company_description');
+  const companyDescription = getComponentContentByKey(footerContent, 'company_description') || 
+                            getContentByKey(siteContent, 'company_description') ||
+                            "Kenya's leading provider of fun stations and children's play areas for private and corporate events. Bringing joy to every celebration!";
+  
+  const quickLinksTitle = getComponentContentByKey(footerContent, 'quick_links_title') || 'Quick Links';
+  const contactInfoTitle = getComponentContentByKey(footerContent, 'contact_info_title') || 'Contact Info';
+  const locationsTitle = getComponentContentByKey(footerContent, 'locations_title') || 'Our Locations';
+  const copyrightText = getComponentContentByKey(footerContent, 'copyright_text') || '© 2024 Star Jump Kenya. All rights reserved.';
+  
   const contactPhone = getContentByKey(siteContent, 'contact_phone');
   const contactEmail = getContentByKey(siteContent, 'contact_email');
   const businessHours = getContentByKey(siteContent, 'business_hours');
@@ -92,7 +101,7 @@ const Footer: React.FC = () => {
               )}
             </Link>
             <p className="text-themed opacity-90 text-sm leading-relaxed mb-4">
-              {companyDescription || "Kenya's leading provider of fun stations and children's play areas for private and corporate events. Bringing joy to every celebration!"}
+              {companyDescription}
             </p>
             
             {/* Social Media */}
@@ -114,7 +123,7 @@ const Footer: React.FC = () => {
 
           {/* Quick Links */}
           <div>
-            <h3 className="font-bold text-lg mb-4 accent-themed">Quick Links</h3>
+            <h3 className="font-bold text-lg mb-4 accent-themed">{quickLinksTitle}</h3>
             <ul className="space-y-2">
               <li><Link to="/about" className="text-themed opacity-90 hover:accent-themed transition-colors duration-300">About Us</Link></li>
               <li><Link to="/corporate" className="text-themed opacity-90 hover:accent-themed transition-colors duration-300">Corporate Services</Link></li>
@@ -126,7 +135,7 @@ const Footer: React.FC = () => {
 
           {/* Contact Info */}
           <div>
-            <h3 className="font-bold text-lg mb-4 accent-themed">Contact Info</h3>
+            <h3 className="font-bold text-lg mb-4 accent-themed">{contactInfoTitle}</h3>
             <div className="space-y-3">
               <div className="flex items-center space-x-2">
                 <Phone className="h-4 w-4 accent-themed" />
@@ -154,7 +163,7 @@ const Footer: React.FC = () => {
 
           {/* Locations */}
           <div>
-            <h3 className="font-bold text-lg mb-4 accent-themed">Our Locations</h3>
+            <h3 className="font-bold text-lg mb-4 accent-themed">{locationsTitle}</h3>
             <div className="space-y-2">
               {locations.map((location, index) => (
                 <div key={index} className="flex items-start space-x-2">
@@ -169,7 +178,7 @@ const Footer: React.FC = () => {
         {/* Bottom Bar */}
         <div className="border-t border-themed/20 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
           <div className="text-themed opacity-80 text-sm mb-4 md:mb-0">
-            © 2024 Star Jump Kenya. All rights reserved.
+            {copyrightText}
           </div>
           <div className="flex space-x-6 text-sm">
             <Link to="/privacy-policy" className="text-white/80 hover:text-star-yellow transition-colors duration-300">

@@ -2,12 +2,15 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, X, Star, Settings } from 'lucide-react';
 import { useSiteAssets, useMenuItems, useSiteSettings } from '../hooks/useSupabaseData';
+import { useComponentContent, useUILabels, getComponentContentByKey, getUILabel } from '../hooks/useContentData';
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { assets, loading: assetsLoading, error: assetsError } = useSiteAssets();
   const { menuItems, loading: menuLoading, error: menuError } = useMenuItems();
   const { settings, loading: settingsLoading } = useSiteSettings();
+  const { content: headerContent } = useComponentContent('header');
+  const { labels: uiLabels } = useUILabels();
   
   // Get header logo
   const headerLogo = assets.find(asset => 
@@ -22,6 +25,10 @@ const Header: React.FC = () => {
 
   const isGraphicsMode = settings.menu_navigation_mode === 'graphics';
   const graphicsSize = parseInt(settings.menu_graphics_size) || 60;
+  
+  // Get dynamic content
+  const logoText = getComponentContentByKey(headerContent, 'logo_text') || 'STAR JUMP';
+  const adminLinkText = getUILabel(uiLabels, 'admin') || 'Admin';
   
   // Get menu graphics assets
   const menuGraphics = assets.filter(asset => 
@@ -119,11 +126,11 @@ const Header: React.FC = () => {
                 {/* Default logo (shown if no custom logo or if custom logo fails) */}
                 <div className={`flex items-center bg-white rounded-full p-3 shadow-lg group-hover:shadow-xl transition-shadow duration-300 ${headerLogo ? 'hidden' : ''}`}>
                   <Star className="h-8 w-8 text-royal-blue mr-1" fill="currentColor" />
-                  <span className="font-bold text-xl text-royal-blue">STAR</span>
+                  <span className="font-bold text-xl text-royal-blue">{logoText.split(' ')[0] || 'STAR'}</span>
                 </div>
                 
                 <div className="hidden sm:block">
-                  <span className="font-bold text-2xl accent-themed drop-shadow-lg">JUMP</span>
+                  <span className="font-bold text-2xl accent-themed drop-shadow-lg">{logoText.split(' ')[1] || 'JUMP'}</span>
                 </div>
               </Link>
 
@@ -216,7 +223,7 @@ const Header: React.FC = () => {
                   title="Admin Login"
                 >
                   <Settings className="h-4 w-4" />
-                  <span className="text-sm font-medium">Admin</span>
+                  <span className="text-sm font-medium">{adminLinkText}</span>
                 </Link>
 
                 {/* Mobile Admin Link */}
@@ -293,7 +300,7 @@ const Header: React.FC = () => {
                 >
                   <div className="flex items-center space-x-2">
                     <Settings className="h-4 w-4" />
-                    <span>Admin Login</span>
+                    <span>{adminLinkText} Login</span>
                   </div>
                 </Link>
               </div>

@@ -1,15 +1,34 @@
 import React, { useState } from 'react';
 import { Plus, Edit, Trash2, Save, X, FileText, Eye, Calendar } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { usePageContent, useSiteContent, useStaticEvents, useBlogPosts, renderContentByType, notifyContentUpdate } from '../../hooks/useContentData';
-import type { PageContentBlock, SiteContent, StaticEvent, BlogPost } from '../../hooks/useContentData';
+import { 
+  usePageContent, 
+  useSiteContent, 
+  useStaticEvents, 
+  useBlogPosts, 
+  useComponentContent,
+  useUILabels,
+  renderContentByType, 
+  notifyContentUpdate 
+} from '../../hooks/useContentData';
+import type { 
+  PageContentBlock, 
+  SiteContent, 
+  StaticEvent, 
+  BlogPost,
+  ComponentContent,
+  UILabel
+} from '../../hooks/useContentData';
 
 const ContentManager: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'pages' | 'site' | 'events' | 'blog'>('pages');
+  const [activeTab, setActiveTab] = useState<'pages' | 'components' | 'ui_labels' | 'site' | 'events' | 'blog'>('pages');
   const [selectedPage, setSelectedPage] = useState('home');
+  const [selectedComponent, setSelectedComponent] = useState('header');
   
   // Data hooks
   const { content: pageContent, loading: pageLoading, refetch: refetchPage } = usePageContent(selectedPage);
+  const { content: componentContent, loading: componentLoading, refetch: refetchComponent } = useComponentContent(selectedComponent);
+  const { labels: uiLabels, loading: labelsLoading, refetch: refetchLabels } = useUILabels();
   const { content: siteContent, loading: siteLoading, refetch: refetchSite } = useSiteContent();
   const { events: staticEvents, loading: eventsLoading, refetch: refetchEvents } = useStaticEvents();
   const { posts: blogPosts, loading: blogLoading, refetch: refetchBlog } = useBlogPosts();
@@ -33,6 +52,19 @@ const ContentManager: React.FC = () => {
     { slug: 'terms-conditions', name: 'Terms & Conditions' }
   ];
 
+  const components = [
+    { name: 'header', label: 'Header' },
+    { name: 'footer', label: 'Footer' },
+    { name: 'navigation', label: 'Navigation' }
+  ];
+
+  const labelCategories = [
+    { key: 'buttons', label: 'Buttons' },
+    { key: 'forms', label: 'Form Labels' },
+    { key: 'messages', label: 'Messages' },
+    { key: 'navigation', label: 'Navigation' }
+  ];
+
   const contentTypes = [
     { value: 'hero', label: 'Hero Section' },
     { value: 'hero_section', label: 'Hero Section' },
@@ -54,6 +86,9 @@ const ContentManager: React.FC = () => {
     { value: 'help_section', label: 'Help Section' },
     { value: 'success_section', label: 'Success Section' },
     { value: 'legal_section', label: 'Legal Section' },
+    { value: 'contact_info_cards', label: 'Contact Info Cards' },
+    { value: 'business_hours_section', label: 'Business Hours' },
+    { value: 'client_types_grid', label: 'Client Types Grid' },
     { value: 'cta', label: 'Call to Action' },
     { value: 'cta_section', label: 'CTA Section' },
     { value: 'image', label: 'Image' },
@@ -96,6 +131,85 @@ const ContentManager: React.FC = () => {
     } catch (err) {
       console.error('[ContentManager] Error saving page content:', err);
       alert('Error saving content: ' + (err instanceof Error ? err.message : 'Unknown error'));
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSaveComponentContent = async () => {
+    console.log('[ContentManager] Starting to save component content:', formData);
+    setIsSaving(true);
+    try {
+      if (isAddingNew) {
+        const { error } = await supabase
+          .from('component_content')
+          .insert([{
+            ...formData,
+            component_name: selectedComponent
+          }]);
+        
+        if (error) throw error;
+        console.log('[ContentManager] Component content added successfully');
+        alert('Component content added successfully!');
+      } else if (editingContent) {
+        const { error } = await supabase
+          .from('component_content')
+          .update(formData)
+          .eq('id', editingContent.id);
+        
+        if (error) throw error;
+        console.log('[ContentManager] Component content updated successfully');
+        alert('Component content updated successfully!');
+      }
+      
+      handleCancel();
+      refetchComponent();
+      
+      // Notify all components using this component's content to refresh
+      console.log('[ContentManager] Notifying content update for component:', selectedComponent);
+      notifyContentUpdate(`component_${selectedComponent}`);
+      
+    } catch (err) {
+      console.error('[ContentManager] Error saving component content:', err);
+      alert('Error saving content: ' + (err instanceof Error ? err.message : 'Unknown error'));
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSaveUILabel = async () => {
+    console.log('[ContentManager] Starting to save UI label:', formData);
+    setIsSaving(true);
+    try {
+      if (isAddingNew) {
+        const { error } = await supabase
+          .from('ui_labels')
+          .insert([formData]);
+        
+        if (error) throw error;
+        console.log('[ContentManager] UI label added successfully');
+        alert('UI label added successfully!');
+      } else if (editingContent) {
+        const { error } = await supabase
+          .from('ui_labels')
+          .update(formData)
+          .eq('id', editingContent.id);
+        
+        if (error) throw error;
+        console.log('[ContentManager] UI label updated successfully');
+        alert('UI label updated successfully!');
+      }
+      
+      handleCancel();
+      refetchLabels();
+      
+      // Notify all components using UI labels to refresh
+      console.log('[ContentManager] Notifying content update for UI labels');
+      notifyContentUpdate('ui_labels');
+      
+    } catch (err) {
+      console.error('[ContentManager] Error saving UI label:', err);
+      alert('Error saving UI label: ' + (err instanceof Error ? err.message : 'Unknown error'));
     } finally {
       setIsSaving(false);
     }
@@ -227,6 +341,10 @@ const ContentManager: React.FC = () => {
       // Notify components to refresh based on table
       if (table === 'page_content_blocks') {
         notifyContentUpdate(`page_${selectedPage}`);
+      } else if (table === 'component_content') {
+        notifyContentUpdate(`component_${selectedComponent}`);
+      } else if (table === 'ui_labels') {
+        notifyContentUpdate('ui_labels');
       } else if (table === 'site_content') {
         notifyContentUpdate('site_content');
       } else if (table === 'static_events') {
@@ -262,6 +380,23 @@ const ContentManager: React.FC = () => {
         button_text: '',
         button_link: '',
         order_position: 0,
+        active: true
+      });
+    } else if (type === 'component') {
+      setFormData({
+        content_key: '',
+        content_type: 'text',
+        title: '',
+        content_text: '',
+        metadata: {},
+        active: true
+      });
+    } else if (type === 'ui_label') {
+      setFormData({
+        category: 'buttons',
+        label_key: '',
+        label_text: '',
+        context: '',
         active: true
       });
     } else if (type === 'site') {
@@ -400,6 +535,148 @@ const ContentManager: React.FC = () => {
             </div>
           )}
         </div>
+      </div>
+    </div>
+  );
+
+  const renderComponentContent = () => (
+    <div className="space-y-6">
+      {/* Component Selector */}
+      <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Select Component</h3>
+        <div className="grid grid-cols-3 gap-3">
+          {components.map((component) => (
+            <button
+              key={component.name}
+              onClick={() => setSelectedComponent(component.name)}
+              className={`p-3 rounded-lg text-sm font-medium transition-colors duration-300 ${
+                selectedComponent === component.name
+                  ? 'bg-royal-blue text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              {component.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Content List */}
+      <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-semibold text-gray-900">
+            {components.find(c => c.name === selectedComponent)?.label} Content
+          </h3>
+          <button
+            onClick={() => handleAddNew('component')}
+            className="bg-royal-blue text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-300 flex items-center space-x-2"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Add Content</span>
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          {componentContent.map((content) => (
+            <div key={content.id} className="p-4 bg-gray-50 rounded-lg border">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center space-x-2">
+                  <span className="bg-green-600 text-white px-2 py-1 rounded text-xs font-bold">
+                    {content.content_type}
+                  </span>
+                  <span className="font-medium text-gray-900">
+                    {content.content_key} - {content.title || 'No Title'}
+                  </span>
+                </div>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => handleEdit(content)}
+                    className="bg-blue-100 text-blue-600 p-1 rounded hover:bg-blue-200 transition-colors duration-300"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete('component_content', content.id, refetchComponent)}
+                    className="bg-red-100 text-red-600 p-1 rounded hover:bg-red-200 transition-colors duration-300"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+              <p className="text-gray-600 text-sm line-clamp-2">
+                {content.content_text || 'No content'}
+              </p>
+            </div>
+          ))}
+          
+          {componentContent.length === 0 && (
+            <div className="text-center py-8">
+              <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No component content</h3>
+              <p className="text-gray-600">Add your first content item to get started.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderUILabels = () => (
+    <div className="space-y-6">
+      <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-semibold text-gray-900">UI Labels & Text</h3>
+          <button
+            onClick={() => handleAddNew('ui_label')}
+            className="bg-royal-blue text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-300 flex items-center space-x-2"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Add Label</span>
+          </button>
+        </div>
+
+        {/* Group by category */}
+        {labelCategories.map((category) => {
+          const categoryLabels = uiLabels.filter(label => label.category === category.key);
+          if (categoryLabels.length === 0) return null;
+          
+          return (
+            <div key={category.key} className="mb-8">
+              <h4 className="text-md font-semibold text-gray-800 mb-4">{category.label}</h4>
+              <div className="space-y-2">
+                {categoryLabels.map((label) => (
+                  <div key={label.id} className="p-3 bg-gray-50 rounded-lg border">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <span className="font-medium text-gray-900">{label.label_key}</span>
+                          {label.context && (
+                            <span className="text-xs text-gray-500">({label.context})</span>
+                          )}
+                        </div>
+                        <p className="text-gray-700 text-sm">{label.label_text}</p>
+                      </div>
+                      <div className="flex space-x-2 ml-4">
+                        <button
+                          onClick={() => handleEdit(label)}
+                          className="bg-blue-100 text-blue-600 p-1 rounded hover:bg-blue-200 transition-colors duration-300"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete('ui_labels', label.id, refetchLabels)}
+                          className="bg-red-100 text-red-600 p-1 rounded hover:bg-red-200 transition-colors duration-300"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -567,6 +844,8 @@ const ContentManager: React.FC = () => {
     const getSaveHandler = () => {
       switch (activeTab) {
         case 'pages': return handleSavePageContent;
+        case 'components': return handleSaveComponentContent;
+        case 'ui_labels': return handleSaveUILabel;
         case 'site': return handleSaveSiteContent;
         case 'events': return handleSaveEvent;
         case 'blog': return handleSaveBlogPost;
@@ -580,7 +859,7 @@ const ContentManager: React.FC = () => {
           <div className="p-6 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-900">
-                {isAddingNew ? 'Add New' : 'Edit'} {activeTab === 'pages' ? 'Page Content' : activeTab === 'site' ? 'Site Content' : activeTab === 'events' ? 'Event' : 'Blog Post'}
+                {isAddingNew ? 'Add New' : 'Edit'} {activeTab === 'pages' ? 'Page Content' : activeTab === 'components' ? 'Component Content' : activeTab === 'ui_labels' ? 'UI Label' : activeTab === 'site' ? 'Site Content' : activeTab === 'events' ? 'Event' : 'Blog Post'}
               </h3>
               <button
                 onClick={handleCancel}
@@ -713,6 +992,86 @@ const ContentManager: React.FC = () => {
                     </div>
                   </>
                 )}
+              </>
+            )}
+
+            {activeTab === 'components' && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Content Key</label>
+                  <input
+                    type="text"
+                    value={formData.content_key || ''}
+                    onChange={(e) => setFormData({ ...formData, content_key: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none"
+                    placeholder="e.g., logo_text, company_description"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+                  <input
+                    type="text"
+                    value={formData.title || ''}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Content Text</label>
+                  <textarea
+                    value={formData.content_text || ''}
+                    onChange={(e) => setFormData({ ...formData, content_text: e.target.value })}
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none resize-none"
+                  />
+                </div>
+              </>
+            )}
+
+            {activeTab === 'ui_labels' && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                  <select
+                    value={formData.category || 'buttons'}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none"
+                  >
+                    {labelCategories.map((category) => (
+                      <option key={category.key} value={category.key}>{category.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Label Key</label>
+                  <input
+                    type="text"
+                    value={formData.label_key || ''}
+                    onChange={(e) => setFormData({ ...formData, label_key: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none"
+                    placeholder="e.g., book_now, contact_us"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Label Text</label>
+                  <input
+                    type="text"
+                    value={formData.label_text || ''}
+                    onChange={(e) => setFormData({ ...formData, label_text: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none"
+                    placeholder="e.g., Book Now, Contact Us"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Context</label>
+                  <input
+                    type="text"
+                    value={formData.context || ''}
+                    onChange={(e) => setFormData({ ...formData, context: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none"
+                    placeholder="e.g., Main navigation, CTA buttons"
+                  />
+                </div>
               </>
             )}
 
@@ -915,6 +1274,8 @@ const ContentManager: React.FC = () => {
           <nav className="flex space-x-8 px-6">
             {[
               { key: 'pages', label: 'Page Content', icon: FileText },
+              { key: 'components', label: 'Components', icon: Eye },
+              { key: 'ui_labels', label: 'UI Labels', icon: FileText },
               { key: 'site', label: 'Site Content', icon: Eye },
               { key: 'events', label: 'Events', icon: Calendar },
               { key: 'blog', label: 'Blog Posts', icon: FileText }
@@ -940,6 +1301,8 @@ const ContentManager: React.FC = () => {
 
         <div className="p-6">
           {activeTab === 'pages' && renderPageContent()}
+          {activeTab === 'components' && renderComponentContent()}
+          {activeTab === 'ui_labels' && renderUILabels()}
           {activeTab === 'site' && renderSiteContent()}
           {activeTab === 'events' && renderEvents()}
           {activeTab === 'blog' && renderBlogPosts()}
