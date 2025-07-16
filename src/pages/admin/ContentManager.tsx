@@ -1,1351 +1,575 @@
 import React, { useState } from 'react';
-import { Plus, Edit, Trash2, Save, X, FileText, Eye, Calendar } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
-import { 
-  usePageContent, 
-  useSiteContent, 
-  useStaticEvents, 
-  useBlogPosts, 
-  useComponentContent,
-  useUILabels,
-  renderContentByType, 
-  notifyContentUpdate 
-} from '../../hooks/useContentData';
-import type { 
-  PageContentBlock, 
-  SiteContent, 
-  StaticEvent, 
-  BlogPost,
-  ComponentContent,
-  UILabel
-} from '../../hooks/useContentData';
+import { Plus, Edit, Trash2, Save, X, FileText, Eye, Image, Type, Layout, MessageSquare } from 'lucide-react';
+
+interface ContentSection {
+  id: string;
+  type: string;
+  title: string;
+  subtitle?: string;
+  content: string;
+  image_url?: string;
+  button_text?: string;
+  button_link?: string;
+  order_position: number;
+  active: boolean;
+  metadata?: any;
+}
+
+interface PageContent {
+  [pageSlug: string]: ContentSection[];
+}
 
 const ContentManager: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'pages' | 'components' | 'ui_labels' | 'site' | 'events' | 'blog'>('pages');
+  // Initialize with some default content structure
+  const [pageContent, setPageContent] = useState<PageContent>({
+    home: [
+      {
+        id: 'home_hero',
+        type: 'hero',
+        title: 'Welcome to Star Jump Kenya',
+        subtitle: 'Kenya\'s Premier Children\'s Entertainment',
+        content: 'Bringing joy and excitement to every celebration across Kenya with our premium play equipment and professional services.',
+        order_position: 1,
+        active: true
+      },
+      {
+        id: 'home_features',
+        type: 'features',
+        title: 'Why Choose Star Jump?',
+        content: 'Safety certified equipment, professional setup, and unforgettable experiences for children across Kenya.',
+        order_position: 2,
+        active: true
+      }
+    ],
+    about: [
+      {
+        id: 'about_hero',
+        type: 'hero',
+        title: 'About Star Jump',
+        content: 'Kenya\'s premier provider of fun stations and children\'s play areas, bringing joy and excitement to every celebration since 2018.',
+        order_position: 1,
+        active: true
+      },
+      {
+        id: 'about_story',
+        type: 'text_with_image',
+        title: 'Our Story',
+        content: 'Star Jump was born from a simple belief: every child deserves to experience pure joy and wonder. Founded in Nairobi in 2018, we started with a single bouncy castle and a dream to make celebrations unforgettable.',
+        image_url: 'https://images.pexels.com/photos/1104014/pexels-photo-1104014.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&dpr=1',
+        order_position: 2,
+        active: true
+      }
+    ],
+    corporate: [
+      {
+        id: 'corporate_hero',
+        type: 'hero',
+        title: 'Corporate Solutions',
+        content: 'Transform your institution with premium play solutions. From permanent installations to event rentals, we create engaging experiences for your community.',
+        order_position: 1,
+        active: true
+      }
+    ],
+    events: [
+      {
+        id: 'events_hero',
+        type: 'hero',
+        title: 'Upcoming Events',
+        content: 'Join us at exciting events across Kenya! From festivals to corporate gatherings, experience the magic of Star Jump.',
+        order_position: 1,
+        active: true
+      }
+    ],
+    shop: [
+      {
+        id: 'shop_hero',
+        type: 'hero',
+        title: 'Fun Shop',
+        content: 'Discover our premium collection of play equipment and accessories. Quality guaranteed, fun delivered across Kenya!',
+        order_position: 1,
+        active: true
+      }
+    ],
+    blog: [
+      {
+        id: 'blog_hero',
+        type: 'hero',
+        title: 'Star Jump Blog',
+        content: 'Insights, tips, and stories from Kenya\'s leading children\'s entertainment experts',
+        order_position: 1,
+        active: true
+      }
+    ],
+    contact: [
+      {
+        id: 'contact_hero',
+        type: 'hero',
+        title: 'Contact Us',
+        content: 'Get in touch with Kenya\'s premier children\'s entertainment experts. We\'re here to make your event magical!',
+        order_position: 1,
+        active: true
+      }
+    ],
+    booking: [
+      {
+        id: 'booking_hero',
+        type: 'hero',
+        title: 'Book Your Fun Space',
+        content: 'Fill out the form below and we\'ll get back to you with availability and pricing in KES!',
+        order_position: 1,
+        active: true
+      }
+    ]
+  });
+
   const [selectedPage, setSelectedPage] = useState('home');
-  const [selectedComponent, setSelectedComponent] = useState('header');
-  
-  // Data hooks
-  const { content: pageContent, loading: pageLoading, refetch: refetchPage } = usePageContent(selectedPage);
-  const { content: componentContent, loading: componentLoading, refetch: refetchComponent } = useComponentContent(selectedComponent);
-  const { labels: uiLabels, loading: labelsLoading, refetch: refetchLabels } = useUILabels();
-  const { content: siteContent, loading: siteLoading, refetch: refetchSite } = useSiteContent();
-  const { events: staticEvents, loading: eventsLoading, refetch: refetchEvents } = useStaticEvents();
-  const { posts: blogPosts, loading: blogLoading, refetch: refetchBlog } = useBlogPosts();
-
-  // Form states
-  const [editingContent, setEditingContent] = useState<any>(null);
-  const [isAddingNew, setIsAddingNew] = useState(false);
+  const [editingSection, setEditingSection] = useState<ContentSection | null>(null);
+  const [isAddingSection, setIsAddingSection] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [formData, setFormData] = useState<any>({});
 
-  const pages = [
-    { slug: 'home', name: 'Home Page' },
-    { slug: 'about', name: 'About Us' },
-    { slug: 'corporate', name: 'Corporate' },
-    { slug: 'events', name: 'Events' },
-    { slug: 'booking', name: 'Booking' },
-    { slug: 'shop', name: 'Shop' },
-    { slug: 'blog', name: 'Blog' },
-    { slug: 'contact', name: 'Contact' },
-    { slug: 'privacy-policy', name: 'Privacy Policy' },
-    { slug: 'terms-conditions', name: 'Terms & Conditions' }
+  const [sectionForm, setSectionForm] = useState({
+    type: 'text',
+    title: '',
+    subtitle: '',
+    content: '',
+    image_url: '',
+    button_text: '',
+    button_link: '',
+    active: true
+  });
+
+  const availablePages = [
+    { slug: 'home', name: 'Home Page', description: 'Main landing page content' },
+    { slug: 'about', name: 'About Us', description: 'Company information and team' },
+    { slug: 'corporate', name: 'Corporate', description: 'B2B services and solutions' },
+    { slug: 'events', name: 'Events', description: 'Events page content and layout' },
+    { slug: 'shop', name: 'Shop', description: 'Product catalog and shopping' },
+    { slug: 'blog', name: 'Blog', description: 'Blog layout and featured content' },
+    { slug: 'contact', name: 'Contact Us', description: 'Contact information and forms' },
+    { slug: 'booking', name: 'Booking', description: 'Booking form and process' }
   ];
 
-  const components = [
-    { name: 'header', label: 'Header' },
-    { name: 'footer', label: 'Footer' },
-    { name: 'navigation', label: 'Navigation' }
+  const sectionTypes = [
+    { type: 'hero', name: 'Hero Section', description: 'Large banner with title and CTA' },
+    { type: 'text', name: 'Text Content', description: 'Rich text content block' },
+    { type: 'text_with_image', name: 'Text + Image', description: 'Text content with accompanying image' },
+    { type: 'features', name: 'Features List', description: 'List of features or benefits' },
+    { type: 'cta', name: 'Call to Action', description: 'Action-focused section' },
+    { type: 'gallery', name: 'Image Gallery', description: 'Collection of images' },
+    { type: 'testimonials', name: 'Testimonials', description: 'Customer reviews and quotes' },
+    { type: 'contact_form', name: 'Contact Form', description: 'Contact or inquiry form' }
   ];
 
-  const labelCategories = [
-    { key: 'buttons', label: 'Buttons' },
-    { key: 'forms', label: 'Form Labels' },
-    { key: 'messages', label: 'Messages' },
-    { key: 'navigation', label: 'Navigation' }
-  ];
-
-  const contentTypes = [
-    { value: 'hero', label: 'Hero Section' },
-    { value: 'hero_section', label: 'Hero Section' },
-    { value: 'section_header', label: 'Section Header' },
-    { value: 'text', label: 'Text Content' },
-    { value: 'text_with_image', label: 'Text with Image' },
-    { value: 'mission_vision', label: 'Mission/Vision' },
-    { value: 'values_grid', label: 'Values Grid' },
-    { value: 'team_grid', label: 'Team Grid' },
-    { value: 'services_grid', label: 'Services Grid' },
-    { value: 'client_types', label: 'Client Types' },
-    { value: 'contact_info', label: 'Contact Info Cards' },
-    { value: 'contact_form', label: 'Contact Form' },
-    { value: 'locations_grid', label: 'Locations Grid' },
-    { value: 'business_hours', label: 'Business Hours' },
-    { value: 'features_section', label: 'Features Section' },
-    { value: 'newsletter_section', label: 'Newsletter Section' },
-    { value: 'form_section', label: 'Form Section' },
-    { value: 'help_section', label: 'Help Section' },
-    { value: 'success_section', label: 'Success Section' },
-    { value: 'legal_section', label: 'Legal Section' },
-    { value: 'contact_info_cards', label: 'Contact Info Cards' },
-    { value: 'business_hours_section', label: 'Business Hours' },
-    { value: 'client_types_grid', label: 'Client Types Grid' },
-    { value: 'cta', label: 'Call to Action' },
-    { value: 'cta_section', label: 'CTA Section' }
-  ];
-
-  const handleSavePageContent = async () => {
-    console.log('[ContentManager] Starting to save page content:', formData);
-    setIsSaving(true);
-    try {
-      if (isAddingNew) {
-        // First ensure the page exists in page_content table
-        const { data: pageData, error: pageError } = await supabase
-          .from('page_content')
-          .select('id')
-          .eq('page_slug', selectedPage)
-          .maybeSingle();
-
-        let pageId = pageData?.id;
-
-        if (!pageId) {
-          // Create the page if it doesn't exist
-          const { data: newPageData, error: createPageError } = await supabase
-            .from('page_content')
-            .insert([{
-              page_slug: selectedPage,
-              content_data: {},
-              meta_title: selectedPage.charAt(0).toUpperCase() + selectedPage.slice(1),
-              meta_description: `${selectedPage} page content`,
-              status: 'published'
-            }])
-            .select('id')
-            .single();
-
-          if (createPageError) throw createPageError;
-          pageId = newPageData.id;
-        }
-
-        // Now insert into page_sections
-        const { error } = await supabase
-          .from('page_sections')
-          .insert([{
-            page_id: pageId,
-            section_type: formData.content_type,
-            title: formData.title,
-            subtitle: formData.subtitle,
-            content_text: formData.content_text,
-            image_url: formData.image_url,
-            settings: {
-              button_text: formData.button_text,
-              button_link: formData.button_link
-            },
-            order_position: formData.order_position,
-            active: formData.active
-          }]);
-        
-        if (error) throw error;
-        console.log('[ContentManager] Page content added successfully');
-        alert('Content added successfully!');
-      } else if (editingContent) {
-        const { error } = await supabase
-          .from('page_content_blocks')
-          .update(formData)
-          .eq('id', editingContent.id);
-        
-        if (error) throw error;
-        console.log('[ContentManager] Page content updated successfully');
-        alert('Content updated successfully!');
-      }
-      
-      handleCancel();
-      refetchPage();
-      
-      // Notify all components using this page's content to refresh
-      console.log('[ContentManager] Notifying content update for page:', selectedPage);
-      notifyContentUpdate(`page_${selectedPage}`);
-      
-    } catch (err) {
-      console.error('[ContentManager] Error saving page content:', err);
-      alert('Error saving content: ' + (err instanceof Error ? err.message : 'Unknown error'));
-    } finally {
-      setIsSaving(false);
-    }
+  const handleAddSection = () => {
+    setIsAddingSection(true);
+    setEditingSection(null);
+    setSectionForm({
+      type: 'text',
+      title: '',
+      subtitle: '',
+      content: '',
+      image_url: '',
+      button_text: '',
+      button_link: '',
+      active: true
+    });
   };
 
-  const handleSaveComponentContent = async () => {
-    console.log('[ContentManager] Starting to save component content:', formData);
-    setIsSaving(true);
-    try {
-      if (isAddingNew) {
-        const { error } = await supabase
-          .from('component_content')
-          .insert([{
-            ...formData,
-            component_name: selectedComponent
-          }]);
-        
-        if (error) throw error;
-        console.log('[ContentManager] Component content added successfully');
-        alert('Component content added successfully!');
-      } else if (editingContent) {
-        const { error } = await supabase
-          .from('component_content')
-          .update(formData)
-          .eq('id', editingContent.id);
-        
-        if (error) throw error;
-        console.log('[ContentManager] Component content updated successfully');
-        alert('Component content updated successfully!');
-      }
-      
-      handleCancel();
-      refetchComponent();
-      
-      // Notify all components using this component's content to refresh
-      console.log('[ContentManager] Notifying content update for component:', selectedComponent);
-      notifyContentUpdate(`component_${selectedComponent}`);
-      
-    } catch (err) {
-      console.error('[ContentManager] Error saving component content:', err);
-      alert('Error saving content: ' + (err instanceof Error ? err.message : 'Unknown error'));
-    } finally {
-      setIsSaving(false);
-    }
+  const handleEditSection = (section: ContentSection) => {
+    setEditingSection(section);
+    setIsAddingSection(false);
+    setSectionForm({
+      type: section.type,
+      title: section.title,
+      subtitle: section.subtitle || '',
+      content: section.content,
+      image_url: section.image_url || '',
+      button_text: section.button_text || '',
+      button_link: section.button_link || '',
+      active: section.active
+    });
   };
 
-  const handleSaveUILabel = async () => {
-    console.log('[ContentManager] Starting to save UI label:', formData);
+  const handleSaveSection = async () => {
     setIsSaving(true);
-    try {
-      if (isAddingNew) {
-        const { error } = await supabase
-          .from('ui_labels')
-          .insert([formData]);
-        
-        if (error) throw error;
-        console.log('[ContentManager] UI label added successfully');
-        alert('UI label added successfully!');
-      } else if (editingContent) {
-        const { error } = await supabase
-          .from('ui_labels')
-          .update(formData)
-          .eq('id', editingContent.id);
-        
-        if (error) throw error;
-        console.log('[ContentManager] UI label updated successfully');
-        alert('UI label updated successfully!');
-      }
-      
-      handleCancel();
-      refetchLabels();
-      
-      // Notify all components using UI labels to refresh
-      console.log('[ContentManager] Notifying content update for UI labels');
-      notifyContentUpdate('ui_labels');
-      
-    } catch (err) {
-      console.error('[ContentManager] Error saving UI label:', err);
-      alert('Error saving UI label: ' + (err instanceof Error ? err.message : 'Unknown error'));
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleSaveSiteContent = async () => {
-    setIsSaving(true);
-    try {
-      if (isAddingNew) {
-        const { error } = await supabase
-          .from('site_content')
-          .insert([formData]);
-        
-        if (error) throw error;
-        console.log('Site content added successfully');
-        alert('Site content added successfully!');
-      } else if (editingContent) {
-        const { error } = await supabase
-          .from('site_content')
-          .update(formData)
-          .eq('id', editingContent.id);
-        
-        if (error) throw error;
-        console.log('Site content updated successfully');
-        alert('Site content updated successfully!');
-      }
-      
-      handleCancel();
-      refetchSite();
-      
-      // Notify all components using site content to refresh
-      notifyContentUpdate('site_content');
-      
-      console.log('[ContentManager] Site content saved and notification sent');
-    } catch (err) {
-      console.error('Error saving site content:', err);
-      alert('Error saving site content: ' + (err instanceof Error ? err.message : 'Unknown error'));
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleSaveEvent = async () => {
-    setIsSaving(true);
-    try {
-      if (isAddingNew) {
-        const { error } = await supabase
-          .from('static_events')
-          .insert([formData]);
-        
-        if (error) throw error;
-        console.log('Event added successfully');
-        alert('Event added successfully!');
-      } else if (editingContent) {
-        const { error } = await supabase
-          .from('static_events')
-          .update(formData)
-          .eq('id', editingContent.id);
-        
-        if (error) throw error;
-        console.log('Event updated successfully');
-        alert('Event updated successfully!');
-      }
-      
-      handleCancel();
-      refetchEvents();
-      
-      // Notify all components using static events to refresh
-      notifyContentUpdate('static_events');
-      
-    } catch (err) {
-      console.error('Error saving event:', err);
-      alert('Error saving event: ' + (err instanceof Error ? err.message : 'Unknown error'));
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleSaveBlogPost = async () => {
-    setIsSaving(true);
-    try {
-      if (isAddingNew) {
-        const { error } = await supabase
-          .from('blog_posts')
-          .insert([formData]);
-        
-        if (error) throw error;
-        console.log('Blog post added successfully');
-        alert('Blog post added successfully!');
-      } else if (editingContent) {
-        const { error } = await supabase
-          .from('blog_posts')
-          .update(formData)
-          .eq('id', editingContent.id);
-        
-        if (error) throw error;
-        console.log('Blog post updated successfully');
-        alert('Blog post updated successfully!');
-      }
-      
-      handleCancel();
-      refetchBlog();
-      
-      // Notify all components using blog posts to refresh
-      notifyContentUpdate('blog_posts');
-      
-    } catch (err) {
-      console.error('Error saving blog post:', err);
-      alert('Error saving blog post: ' + (err instanceof Error ? err.message : 'Unknown error'));
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleDelete = async (table: string, id: string, refetchFn: () => void) => {
-    if (!confirm('Are you sure you want to delete this item?')) return;
     
     try {
-      const { error } = await supabase
-        .from(table)
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
-      console.log(`Item deleted from ${table} successfully`);
-      alert('Item deleted successfully!');
-      refetchFn();
-      
-      // Notify components to refresh based on table
-      if (table === 'page_content_blocks') {
-        notifyContentUpdate(`page_${selectedPage}`);
-      } else if (table === 'component_content') {
-        notifyContentUpdate(`component_${selectedComponent}`);
-      } else if (table === 'ui_labels') {
-        notifyContentUpdate('ui_labels');
-      } else if (table === 'site_content') {
-        notifyContentUpdate('site_content');
-      } else if (table === 'static_events') {
-        notifyContentUpdate('static_events');
-      } else if (table === 'blog_posts') {
-        notifyContentUpdate('blog_posts');
+      const sections = pageContent[selectedPage] || [];
+      const newSection: ContentSection = {
+        id: editingSection?.id || `${selectedPage}_${Date.now()}`,
+        type: sectionForm.type,
+        title: sectionForm.title,
+        subtitle: sectionForm.subtitle,
+        content: sectionForm.content,
+        image_url: sectionForm.image_url,
+        button_text: sectionForm.button_text,
+        button_link: sectionForm.button_link,
+        order_position: editingSection?.order_position || sections.length + 1,
+        active: sectionForm.active,
+        metadata: {}
+      };
+
+      let updatedSections;
+      if (editingSection) {
+        updatedSections = sections.map(s => 
+          s.id === editingSection.id ? newSection : s
+        );
+      } else {
+        updatedSections = [...sections, newSection];
       }
-      
+
+      setPageContent(prev => ({
+        ...prev,
+        [selectedPage]: updatedSections
+      }));
+
+      // Save to localStorage for persistence
+      localStorage.setItem('starjump_page_content', JSON.stringify({
+        ...pageContent,
+        [selectedPage]: updatedSections
+      }));
+
+      alert('Section saved successfully!');
+      handleCancelSection();
     } catch (err) {
-      console.error(`Error deleting from ${table}:`, err);
-      alert('Error deleting item: ' + (err instanceof Error ? err.message : 'Unknown error'));
+      alert('Error saving section: ' + (err instanceof Error ? err.message : 'Unknown error'));
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const handleEdit = (item: any) => {
-    setEditingContent(item);
-    setFormData(item);
-    setIsAddingNew(false);
+  const handleDeleteSection = (sectionId: string) => {
+    if (!confirm('Are you sure you want to delete this section?')) return;
+
+    const sections = pageContent[selectedPage] || [];
+    const updatedSections = sections.filter(s => s.id !== sectionId);
+
+    setPageContent(prev => ({
+      ...prev,
+      [selectedPage]: updatedSections
+    }));
+
+    // Save to localStorage
+    localStorage.setItem('starjump_page_content', JSON.stringify({
+      ...pageContent,
+      [selectedPage]: updatedSections
+    }));
+
+    alert('Section deleted successfully!');
   };
 
-  const handleAddNew = (type: string) => {
-    setIsAddingNew(true);
-    setEditingContent(null);
-    
-    if (type === 'page') {
-      setFormData({
-        section_key: '',
-        content_type: 'text',
-        title: '',
-        subtitle: '',
-        content_text: '',
-        image_url: '',
-        button_text: '',
-        button_link: '',
-        order_position: 0,
-        active: true
-      });
-    } else if (type === 'component') {
-      setFormData({
-        content_key: '',
-        content_type: 'text',
-        title: '',
-        content_text: '',
-        metadata: {},
-        active: true
-      });
-    } else if (type === 'ui_label') {
-      setFormData({
-        category: 'buttons',
-        label_key: '',
-        label_text: '',
-        context: '',
-        active: true
-      });
-    } else if (type === 'site') {
-      setFormData({
-        content_key: '',
-        content_type: 'text',
-        title: '',
-        content_text: '',
-        metadata: {},
-        active: true
-      });
-    } else if (type === 'event') {
-      setFormData({
-        title: '',
-        description: '',
-        image_url: '',
-        date: '',
-        time: '',
-        location: '',
-        category: 'General',
-        featured: false,
-        attendees: '',
-        price_text: 'Free',
-        button_primary_text: 'Learn More',
-        button_primary_link: '#',
-        button_secondary_text: 'Register',
-        button_secondary_link: '#',
-        active: true
-      });
-    } else if (type === 'blog') {
-      setFormData({
-        title: '',
-        excerpt: '',
-        content_text: '',
-        author: '',
-        date: new Date().toISOString().split('T')[0],
-        read_time: '5 min read',
-        category: 'General',
-        image_url: '',
-        featured: false,
-        tags: [],
-        active: true
-      });
+  const handleCancelSection = () => {
+    setEditingSection(null);
+    setIsAddingSection(false);
+    setSectionForm({
+      type: 'text',
+      title: '',
+      subtitle: '',
+      content: '',
+      image_url: '',
+      button_text: '',
+      button_link: '',
+      active: true
+    });
+  };
+
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case 'hero': return Layout;
+      case 'text': return Type;
+      case 'text_with_image': return Image;
+      case 'cta': return MessageSquare;
+      default: return FileText;
     }
   };
 
-  const handleCancel = () => {
-    setEditingContent(null);
-    setIsAddingNew(false);
-    setFormData({});
-  };
-
-  const renderPageContent = () => (
-    <div className="space-y-6">
-      {/* Page Selector */}
-      <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Select Page</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {pages.map((page) => (
-            <button
-              key={page.slug}
-              onClick={() => setSelectedPage(page.slug)}
-              className={`p-3 rounded-lg text-sm font-medium transition-colors duration-300 ${
-                selectedPage === page.slug
-                  ? 'bg-royal-blue text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              {page.name}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Content List */}
-      <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-gray-900">
-            {pages.find(p => p.slug === selectedPage)?.name} Content
-          </h3>
-          <button
-            onClick={() => handleAddNew('page')}
-            className="bg-royal-blue text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-300 flex items-center space-x-2"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Add Content Block</span>
-          </button>
-        </div>
-
-        <div className="space-y-4">
-          {pageContent.map((content) => (
-            <div key={content.id} className="p-4 bg-gray-50 rounded-lg border">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center space-x-2">
-                  <span className="bg-royal-blue text-white px-2 py-1 rounded text-xs font-bold">
-                    {content.content_type}
-                  </span>
-                  <span className="font-medium text-gray-900">
-                    {content.section_key} - {content.title || 'No Title'}
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    Order: {content.order_position}
-                  </span>
-                </div>
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => handleEdit(content)}
-                    className="bg-blue-100 text-blue-600 p-1 rounded hover:bg-blue-200 transition-colors duration-300"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete('page_content_blocks', content.id, refetchPage)}
-                    className="bg-red-100 text-red-600 p-1 rounded hover:bg-red-200 transition-colors duration-300"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-              <p className="text-gray-600 text-sm line-clamp-2">
-                {content.content_text || 'No content'}
-              </p>
-              {content.metadata && Object.keys(content.metadata).length > 0 && (
-                <div className="mt-2 text-xs text-gray-500">
-                  Metadata: {Object.keys(content.metadata).join(', ')}
-                </div>
-              )}
-            </div>
-          ))}
-          
-          {pageContent.length === 0 && (
-            <div className="text-center py-8">
-              <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No content blocks</h3>
-              <p className="text-gray-600">Add your first content block to get started.</p>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderComponentContent = () => (
-    <div className="space-y-6">
-      {/* Component Selector */}
-      <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Select Component</h3>
-        <div className="grid grid-cols-3 gap-3">
-          {components.map((component) => (
-            <button
-              key={component.name}
-              onClick={() => setSelectedComponent(component.name)}
-              className={`p-3 rounded-lg text-sm font-medium transition-colors duration-300 ${
-                selectedComponent === component.name
-                  ? 'bg-royal-blue text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              {component.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Content List */}
-      <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-gray-900">
-            {components.find(c => c.name === selectedComponent)?.label} Content
-          </h3>
-          <button
-            onClick={() => handleAddNew('component')}
-            className="bg-royal-blue text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-300 flex items-center space-x-2"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Add Content</span>
-          </button>
-        </div>
-
-        <div className="space-y-4">
-          {componentContent.map((content) => (
-            <div key={content.id} className="p-4 bg-gray-50 rounded-lg border">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center space-x-2">
-                  <span className="bg-green-600 text-white px-2 py-1 rounded text-xs font-bold">
-                    {content.content_type}
-                  </span>
-                  <span className="font-medium text-gray-900">
-                    {content.content_key} - {content.title || 'No Title'}
-                  </span>
-                </div>
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => handleEdit(content)}
-                    className="bg-blue-100 text-blue-600 p-1 rounded hover:bg-blue-200 transition-colors duration-300"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete('component_content', content.id, refetchComponent)}
-                    className="bg-red-100 text-red-600 p-1 rounded hover:bg-red-200 transition-colors duration-300"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-              <p className="text-gray-600 text-sm line-clamp-2">
-                {content.content_text || 'No content'}
-              </p>
-            </div>
-          ))}
-          
-          {componentContent.length === 0 && (
-            <div className="text-center py-8">
-              <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No component content</h3>
-              <p className="text-gray-600">Add your first content item to get started.</p>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderUILabels = () => (
-    <div className="space-y-6">
-      <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-gray-900">UI Labels & Text</h3>
-          <button
-            onClick={() => handleAddNew('ui_label')}
-            className="bg-royal-blue text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-300 flex items-center space-x-2"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Add Label</span>
-          </button>
-        </div>
-
-        {/* Group by category */}
-        {labelCategories.map((category) => {
-          const categoryLabels = uiLabels.filter(label => label.category === category.key);
-          if (categoryLabels.length === 0) return null;
-          
-          return (
-            <div key={category.key} className="mb-8">
-              <h4 className="text-md font-semibold text-gray-800 mb-4">{category.label}</h4>
-              <div className="space-y-2">
-                {categoryLabels.map((label) => (
-                  <div key={label.id} className="p-3 bg-gray-50 rounded-lg border">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-1">
-                          <span className="font-medium text-gray-900">{label.label_key}</span>
-                          {label.context && (
-                            <span className="text-xs text-gray-500">({label.context})</span>
-                          )}
-                        </div>
-                        <p className="text-gray-700 text-sm">{label.label_text}</p>
-                      </div>
-                      <div className="flex space-x-2 ml-4">
-                        <button
-                          onClick={() => handleEdit(label)}
-                          className="bg-blue-100 text-blue-600 p-1 rounded hover:bg-blue-200 transition-colors duration-300"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete('ui_labels', label.id, refetchLabels)}
-                          className="bg-red-100 text-red-600 p-1 rounded hover:bg-red-200 transition-colors duration-300"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-
-  const renderSiteContent = () => (
-    <div className="space-y-6">
-      <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-gray-900">Global Site Content</h3>
-          <button
-            onClick={() => handleAddNew('site')}
-            className="bg-royal-blue text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-300 flex items-center space-x-2"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Add Site Content</span>
-          </button>
-        </div>
-
-        <div className="space-y-4">
-          {siteContent.map((content) => (
-            <div key={content.id} className="p-4 bg-gray-50 rounded-lg border">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center space-x-2">
-                  <span className="bg-green-600 text-white px-2 py-1 rounded text-xs font-bold">
-                    {content.content_type}
-                  </span>
-                  <span className="font-medium text-gray-900">{content.content_key}</span>
-                </div>
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => handleEdit(content)}
-                    className="bg-blue-100 text-blue-600 p-1 rounded hover:bg-blue-200 transition-colors duration-300"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete('site_content', content.id, refetchSite)}
-                    className="bg-red-100 text-red-600 p-1 rounded hover:bg-red-200 transition-colors duration-300"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-              <p className="text-gray-600 text-sm line-clamp-2">
-                {content.content_text || 'No content'}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderEvents = () => (
-    <div className="space-y-6">
-      <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-gray-900">Static Events</h3>
-          <button
-            onClick={() => handleAddNew('event')}
-            className="bg-royal-blue text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-300 flex items-center space-x-2"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Add Event</span>
-          </button>
-        </div>
-
-        <div className="grid gap-4">
-          {staticEvents.map((event) => (
-            <div key={event.id} className="p-4 bg-gray-50 rounded-lg border">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <h4 className="font-semibold text-gray-900">{event.title}</h4>
-                    {event.featured && (
-                      <span className="bg-star-yellow text-royal-blue px-2 py-1 rounded text-xs font-bold">
-                        Featured
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-sm text-gray-600 mb-2">{event.description}</p>
-                  <div className="text-xs text-gray-500">
-                    {event.date} • {event.location} • {event.category}
-                  </div>
-                </div>
-                <div className="flex space-x-2 ml-4">
-                  <button
-                    onClick={() => handleEdit(event)}
-                    className="bg-blue-100 text-blue-600 p-1 rounded hover:bg-blue-200 transition-colors duration-300"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete('static_events', event.id, refetchEvents)}
-                    className="bg-red-100 text-red-600 p-1 rounded hover:bg-red-200 transition-colors duration-300"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderBlogPosts = () => (
-    <div className="space-y-6">
-      <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-gray-900">Blog Posts</h3>
-          <button
-            onClick={() => handleAddNew('blog')}
-            className="bg-royal-blue text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-300 flex items-center space-x-2"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Add Blog Post</span>
-          </button>
-        </div>
-
-        <div className="grid gap-4">
-          {blogPosts.map((post) => (
-            <div key={post.id} className="p-4 bg-gray-50 rounded-lg border">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <h4 className="font-semibold text-gray-900">{post.title}</h4>
-                    {post.featured && (
-                      <span className="bg-star-yellow text-royal-blue px-2 py-1 rounded text-xs font-bold">
-                        Featured
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-sm text-gray-600 mb-2">{post.excerpt}</p>
-                  <div className="text-xs text-gray-500">
-                    By {post.author} • {new Date(post.date).toLocaleDateString()} • {post.category}
-                  </div>
-                </div>
-                <div className="flex space-x-2 ml-4">
-                  <button
-                    onClick={() => handleEdit(post)}
-                    className="bg-blue-100 text-blue-600 p-1 rounded hover:bg-blue-200 transition-colors duration-300"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete('blog_posts', post.id, refetchBlog)}
-                    className="bg-red-100 text-red-600 p-1 rounded hover:bg-red-200 transition-colors duration-300"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderEditForm = () => {
-    if (!editingContent && !isAddingNew) return null;
-
-    const getSaveHandler = () => {
-      switch (activeTab) {
-        case 'pages': return handleSavePageContent;
-        case 'components': return handleSaveComponentContent;
-        case 'ui_labels': return handleSaveUILabel;
-        case 'site': return handleSaveSiteContent;
-        case 'events': return handleSaveEvent;
-        case 'blog': return handleSaveBlogPost;
-        default: return () => {};
+  // Load from localStorage on component mount
+  React.useEffect(() => {
+    const saved = localStorage.getItem('starjump_page_content');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setPageContent(parsed);
+      } catch (err) {
+        console.error('Error loading saved content:', err);
       }
-    };
+    }
+  }, []);
 
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">
-                {isAddingNew ? 'Add New' : 'Edit'} {activeTab === 'pages' ? 'Page Content' : activeTab === 'components' ? 'Component Content' : activeTab === 'ui_labels' ? 'UI Label' : activeTab === 'site' ? 'Site Content' : activeTab === 'events' ? 'Event' : 'Blog Post'}
-              </h3>
-              <button
-                onClick={handleCancel}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <X className="h-6 w-6" />
-              </button>
-            </div>
-          </div>
-
-          <div className="p-6 space-y-4">
-            {activeTab === 'pages' && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Section Key</label>
-                  <input
-                    type="text"
-                    value={formData.section_key || ''}
-                    onChange={(e) => setFormData({ ...formData, section_key: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none"
-                    placeholder="e.g., hero, featured_section"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Content Type</label>
-                  <select
-                    value={formData.content_type || 'text'}
-                    onChange={(e) => setFormData({ ...formData, content_type: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none"
-                  >
-                    {contentTypes.map((type) => (
-                      <option key={type.value} value={type.value}>{type.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
-                  <input
-                    type="text"
-                    value={formData.title || ''}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Content Text</label>
-                  <textarea
-                    value={formData.content_text || ''}
-                    onChange={(e) => setFormData({ ...formData, content_text: e.target.value })}
-                    rows={6}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none resize-none"
-                    placeholder="Enter the main content text. Use \n\n for paragraph breaks."
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Image URL</label>
-                  <input
-                    type="url"
-                    value={formData.image_url || ''}
-                    onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none"
-                    placeholder="https://example.com/image.jpg"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Order Position</label>
-                    <input
-                      type="number"
-                      value={formData.order_position || 0}
-                      onChange={(e) => setFormData({ ...formData, order_position: Number(e.target.value) })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none"
-                      min="0"
-                    />
-                  </div>
-                  <div className="flex items-center pt-6">
-                    <input
-                      type="checkbox"
-                      id="page-active"
-                      checked={formData.active !== false}
-                      onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
-                      className="h-4 w-4 text-royal-blue focus:ring-royal-blue border-gray-300 rounded"
-                    />
-                    <label htmlFor="page-active" className="ml-2 block text-sm text-gray-900">
-                      Active (visible on website)
-                    </label>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Metadata (JSON) - For complex content like team members, values, etc.
-                  </label>
-                  <textarea
-                    value={typeof formData.metadata === 'object' ? JSON.stringify(formData.metadata, null, 2) : formData.metadata || '{}'}
-                    onChange={(e) => {
-                      try {
-                        const parsed = JSON.parse(e.target.value);
-                        setFormData({ ...formData, metadata: parsed });
-                      } catch {
-                        setFormData({ ...formData, metadata: e.target.value });
-                      }
-                    }}
-                    rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none resize-none font-mono text-sm"
-                    placeholder='{"buttons": [{"text": "Click Me", "link": "/page"}]}'
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Use JSON format for complex data like buttons, team members, values, etc.
-                  </p>
-                </div>
-                {formData.content_type === 'cta' && (
-                  <>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Button Text</label>
-                      <input
-                        type="text"
-                        value={formData.button_text || ''}
-                        onChange={(e) => setFormData({ ...formData, button_text: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Button Link</label>
-                      <input
-                        type="text"
-                        value={formData.button_link || ''}
-                        onChange={(e) => setFormData({ ...formData, button_link: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none"
-                      />
-                    </div>
-                  </>
-                )}
-              </>
-            )}
-
-            {activeTab === 'components' && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Content Key</label>
-                  <input
-                    type="text"
-                    value={formData.content_key || ''}
-                    onChange={(e) => setFormData({ ...formData, content_key: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none"
-                    placeholder="e.g., logo_text, company_description"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
-                  <input
-                    type="text"
-                    value={formData.title || ''}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Content Text</label>
-                  <textarea
-                    value={formData.content_text || ''}
-                    onChange={(e) => setFormData({ ...formData, content_text: e.target.value })}
-                    rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none resize-none"
-                  />
-                </div>
-              </>
-            )}
-
-            {activeTab === 'ui_labels' && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
-                  <select
-                    value={formData.category || 'buttons'}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none"
-                  >
-                    {labelCategories.map((category) => (
-                      <option key={category.key} value={category.key}>{category.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Label Key</label>
-                  <input
-                    type="text"
-                    value={formData.label_key || ''}
-                    onChange={(e) => setFormData({ ...formData, label_key: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none"
-                    placeholder="e.g., book_now, contact_us"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Label Text</label>
-                  <input
-                    type="text"
-                    value={formData.label_text || ''}
-                    onChange={(e) => setFormData({ ...formData, label_text: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none"
-                    placeholder="e.g., Book Now, Contact Us"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Context</label>
-                  <input
-                    type="text"
-                    value={formData.context || ''}
-                    onChange={(e) => setFormData({ ...formData, context: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none"
-                    placeholder="e.g., Main navigation, CTA buttons"
-                  />
-                </div>
-              </>
-            )}
-
-            {activeTab === 'site' && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Content Key</label>
-                  <input
-                    type="text"
-                    value={formData.content_key || ''}
-                    onChange={(e) => setFormData({ ...formData, content_key: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none"
-                    placeholder="e.g., company_description, contact_phone"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
-                  <input
-                    type="text"
-                    value={formData.title || ''}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Content Text</label>
-                  <textarea
-                    value={formData.content_text || ''}
-                    onChange={(e) => setFormData({ ...formData, content_text: e.target.value })}
-                    rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none resize-none"
-                  />
-                </div>
-              </>
-            )}
-
-            {activeTab === 'events' && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
-                  <input
-                    type="text"
-                    value={formData.title || ''}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                  <textarea
-                    value={formData.description || ''}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none resize-none"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
-                    <input
-                      type="text"
-                      value={formData.date || ''}
-                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none"
-                      placeholder="December 15-17, 2024"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Time</label>
-                    <input
-                      type="text"
-                      value={formData.time || ''}
-                      onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none"
-                      placeholder="10:00 AM - 6:00 PM"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
-                  <input
-                    type="text"
-                    value={formData.location || ''}
-                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none"
-                  />
-                </div>
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="featured"
-                    checked={formData.featured || false}
-                    onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
-                    className="h-4 w-4 text-royal-blue focus:ring-royal-blue border-gray-300 rounded"
-                  />
-                  <label htmlFor="featured" className="ml-2 block text-sm text-gray-900">
-                    Featured Event
-                  </label>
-                </div>
-              </>
-            )}
-
-            {activeTab === 'blog' && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
-                  <input
-                    type="text"
-                    value={formData.title || ''}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Excerpt</label>
-                  <textarea
-                    value={formData.excerpt || ''}
-                    onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
-                    rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none resize-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Content</label>
-                  <textarea
-                    value={formData.content_text || ''}
-                    onChange={(e) => setFormData({ ...formData, content_text: e.target.value })}
-                    rows={6}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none resize-none"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Author</label>
-                    <input
-                      type="text"
-                      value={formData.author || ''}
-                      onChange={(e) => setFormData({ ...formData, author: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
-                    <input
-                      type="date"
-                      value={formData.date || ''}
-                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none"
-                    />
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="blog-featured"
-                    checked={formData.featured || false}
-                    onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
-                    className="h-4 w-4 text-royal-blue focus:ring-royal-blue border-gray-300 rounded"
-                  />
-                  <label htmlFor="blog-featured" className="ml-2 block text-sm text-gray-900">
-                    Featured Post
-                  </label>
-                </div>
-              </>
-            )}
-          </div>
-
-          <div className="p-6 border-t border-gray-200 flex space-x-3">
-            <button
-              onClick={getSaveHandler()}
-              disabled={isSaving}
-              className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors duration-300 flex items-center space-x-2 disabled:opacity-50"
-            >
-              <Save className="h-4 w-4" />
-              <span>{isSaving ? 'Saving...' : 'Save'}</span>
-            </button>
-            <button
-              onClick={handleCancel}
-              className="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition-colors duration-300"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
+  const currentSections = pageContent[selectedPage] || [];
 
   return (
     <div className="space-y-8">
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Content Manager</h1>
-        <p className="text-gray-600 mt-2">Manage all website content from one place</p>
+        <p className="text-gray-600 mt-2">Manage content for all website pages</p>
       </div>
 
-      {/* Tabs */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="border-b border-gray-200">
-          <nav className="flex space-x-8 px-6">
-            {[
-              { key: 'pages', label: 'Page Content', icon: FileText },
-              { key: 'components', label: 'Components', icon: Eye },
-              { key: 'ui_labels', label: 'UI Labels', icon: FileText },
-              { key: 'site', label: 'Site Content', icon: Eye },
-              { key: 'events', label: 'Events', icon: Calendar },
-              { key: 'blog', label: 'Blog Posts', icon: FileText }
-            ].map((tab) => {
-              const Icon = tab.icon;
-              return (
+      <div className="grid lg:grid-cols-4 gap-8">
+        {/* Page Selection */}
+        <div className="lg:col-span-1">
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+            <h2 className="text-lg font-bold text-gray-900 mb-4">Select Page</h2>
+            <div className="space-y-2">
+              {availablePages.map((page) => (
                 <button
-                  key={tab.key}
-                  onClick={() => setActiveTab(tab.key as any)}
-                  className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-300 ${
-                    activeTab === tab.key
-                      ? 'border-royal-blue text-royal-blue'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  key={page.slug}
+                  onClick={() => setSelectedPage(page.slug)}
+                  className={`w-full text-left p-3 rounded-lg transition-colors duration-300 ${
+                    selectedPage === page.slug
+                      ? 'bg-royal-blue text-white'
+                      : 'bg-gray-50 hover:bg-gray-100 text-gray-900'
                   }`}
                 >
-                  <Icon className="h-4 w-4" />
-                  <span>{tab.label}</span>
+                  <div className="font-medium">{page.name}</div>
+                  <div className={`text-sm ${
+                    selectedPage === page.slug ? 'text-white/80' : 'text-gray-600'
+                  }`}>
+                    {page.description}
+                  </div>
                 </button>
-              );
-            })}
-          </nav>
+              ))}
+            </div>
+          </div>
         </div>
 
-        <div className="p-6">
-          {activeTab === 'pages' && renderPageContent()}
-          {activeTab === 'components' && renderComponentContent()}
-          {activeTab === 'ui_labels' && renderUILabels()}
-          {activeTab === 'site' && renderSiteContent()}
-          {activeTab === 'events' && renderEvents()}
-          {activeTab === 'blog' && renderBlogPosts()}
+        {/* Content Management */}
+        <div className="lg:col-span-3">
+          <div className="space-y-6">
+            {/* Page Header */}
+            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">
+                    {availablePages.find(p => p.slug === selectedPage)?.name} Content
+                  </h2>
+                  <p className="text-gray-600 mt-1">
+                    Manage content sections for this page
+                  </p>
+                </div>
+                <button
+                  onClick={handleAddSection}
+                  className="bg-royal-blue text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-300 flex items-center space-x-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Add Section</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Section Form */}
+            {(editingSection || isAddingSection) && (
+              <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {editingSection ? 'Edit Section' : 'Add New Section'}
+                  </h3>
+                  <button
+                    onClick={handleCancelSection}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Section Type
+                    </label>
+                    <select
+                      value={sectionForm.type}
+                      onChange={(e) => setSectionForm({ ...sectionForm, type: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none"
+                    >
+                      {sectionTypes.map((type) => (
+                        <option key={type.type} value={type.type}>{type.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Section Title
+                    </label>
+                    <input
+                      type="text"
+                      value={sectionForm.title}
+                      onChange={(e) => setSectionForm({ ...sectionForm, title: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none"
+                      placeholder="Section title"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Subtitle (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={sectionForm.subtitle}
+                      onChange={(e) => setSectionForm({ ...sectionForm, subtitle: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none"
+                      placeholder="Section subtitle"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Image URL (Optional)
+                    </label>
+                    <input
+                      type="url"
+                      value={sectionForm.image_url}
+                      onChange={(e) => setSectionForm({ ...sectionForm, image_url: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none"
+                      placeholder="https://example.com/image.jpg"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Content
+                    </label>
+                    <textarea
+                      value={sectionForm.content}
+                      onChange={(e) => setSectionForm({ ...sectionForm, content: e.target.value })}
+                      rows={4}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none resize-none"
+                      placeholder="Section content"
+                    />
+                  </div>
+
+                  {(sectionForm.type === 'cta' || sectionForm.type === 'hero') && (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Button Text (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          value={sectionForm.button_text}
+                          onChange={(e) => setSectionForm({ ...sectionForm, button_text: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none"
+                          placeholder="Button text"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Button Link (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          value={sectionForm.button_link}
+                          onChange={(e) => setSectionForm({ ...sectionForm, button_link: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none"
+                          placeholder="/contact"
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  <div className="md:col-span-2 flex items-center">
+                    <input
+                      type="checkbox"
+                      id="active"
+                      checked={sectionForm.active}
+                      onChange={(e) => setSectionForm({ ...sectionForm, active: e.target.checked })}
+                      className="h-4 w-4 text-royal-blue focus:ring-royal-blue border-gray-300 rounded"
+                    />
+                    <label htmlFor="active" className="ml-2 block text-sm text-gray-900">
+                      Active (visible on website)
+                    </label>
+                  </div>
+                </div>
+
+                <div className="flex space-x-3 mt-6">
+                  <button
+                    onClick={handleSaveSection}
+                    disabled={isSaving}
+                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors duration-300 flex items-center space-x-2 disabled:opacity-50"
+                  >
+                    <Save className="h-4 w-4" />
+                    <span>{isSaving ? 'Saving...' : 'Save Section'}</span>
+                  </button>
+                  <button
+                    onClick={handleCancelSection}
+                    className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors duration-300"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Existing Sections */}
+            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Content Sections</h3>
+              
+              <div className="space-y-4">
+                {currentSections.map((section, index) => {
+                  const TypeIcon = getTypeIcon(section.type);
+                  return (
+                    <div key={section.id} className="p-4 bg-gray-50 rounded-lg border">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-3">
+                          <span className="bg-royal-blue text-white px-2 py-1 rounded text-xs font-bold">
+                            {index + 1}
+                          </span>
+                          <TypeIcon className="h-4 w-4 text-royal-blue" />
+                          <span className="font-medium text-gray-900">{section.title || 'Untitled Section'}</span>
+                          <span className="text-sm text-gray-500">({section.type})</span>
+                          {!section.active && (
+                            <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-bold">
+                              Inactive
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleEditSection(section)}
+                            className="bg-blue-100 text-blue-600 p-1 rounded hover:bg-blue-200 transition-colors duration-300"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteSection(section.id)}
+                            className="bg-red-100 text-red-600 p-1 rounded hover:bg-red-200 transition-colors duration-300"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                      <p className="text-gray-600 text-sm line-clamp-2">
+                        {section.content || 'No content'}
+                      </p>
+                      {section.image_url && (
+                        <div className="mt-2">
+                          <img 
+                            src={section.image_url} 
+                            alt={section.title}
+                            className="h-16 w-24 object-cover rounded border"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {currentSections.length === 0 && (
+                  <div className="text-center py-8">
+                    <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No content sections</h3>
+                    <p className="text-gray-600">Add your first content section to get started.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-
-      {renderEditForm()}
     </div>
   );
 };
