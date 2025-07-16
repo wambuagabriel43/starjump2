@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Edit, Trash2, Save, X, FileText, Eye, Calendar } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { usePageContent, useSiteContent, useStaticEvents, useBlogPosts } from '../../hooks/useContentData';
+import { usePageContent, useSiteContent, useStaticEvents, useBlogPosts, renderContentByType } from '../../hooks/useContentData';
 import type { PageContentBlock, SiteContent, StaticEvent, BlogPost } from '../../hooks/useContentData';
 
 const ContentManager: React.FC = () => {
@@ -23,19 +23,39 @@ const ContentManager: React.FC = () => {
   const pages = [
     { slug: 'home', name: 'Home Page' },
     { slug: 'about', name: 'About Us' },
+    { slug: 'corporate', name: 'Corporate' },
     { slug: 'events', name: 'Events' },
+    { slug: 'booking', name: 'Booking' },
     { slug: 'shop', name: 'Shop' },
     { slug: 'blog', name: 'Blog' },
     { slug: 'contact', name: 'Contact' },
-    { slug: 'corporate', name: 'Corporate' },
-    { slug: 'booking', name: 'Booking' }
+    { slug: 'privacy-policy', name: 'Privacy Policy' },
+    { slug: 'terms-conditions', name: 'Terms & Conditions' }
   ];
 
   const contentTypes = [
     { value: 'hero', label: 'Hero Section' },
+    { value: 'hero_section', label: 'Hero Section' },
     { value: 'section_header', label: 'Section Header' },
     { value: 'text', label: 'Text Content' },
+    { value: 'text_with_image', label: 'Text with Image' },
+    { value: 'mission_vision', label: 'Mission/Vision' },
+    { value: 'values_grid', label: 'Values Grid' },
+    { value: 'team_grid', label: 'Team Grid' },
+    { value: 'services_grid', label: 'Services Grid' },
+    { value: 'client_types', label: 'Client Types' },
+    { value: 'contact_info', label: 'Contact Info Cards' },
+    { value: 'contact_form', label: 'Contact Form' },
+    { value: 'locations_grid', label: 'Locations Grid' },
+    { value: 'business_hours', label: 'Business Hours' },
+    { value: 'features_section', label: 'Features Section' },
+    { value: 'newsletter_section', label: 'Newsletter Section' },
+    { value: 'form_section', label: 'Form Section' },
+    { value: 'help_section', label: 'Help Section' },
+    { value: 'success_section', label: 'Success Section' },
+    { value: 'legal_section', label: 'Legal Section' },
     { value: 'cta', label: 'Call to Action' },
+    { value: 'cta_section', label: 'CTA Section' },
     { value: 'image', label: 'Image' },
     { value: 'video', label: 'Video' }
   ];
@@ -294,7 +314,12 @@ const ContentManager: React.FC = () => {
                   <span className="bg-royal-blue text-white px-2 py-1 rounded text-xs font-bold">
                     {content.content_type}
                   </span>
-                  <span className="font-medium text-gray-900">{content.title || content.section_key}</span>
+                  <span className="font-medium text-gray-900">
+                    {content.section_key} - {content.title || 'No Title'}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    Order: {content.order_position}
+                  </span>
                 </div>
                 <div className="flex space-x-2">
                   <button
@@ -314,8 +339,21 @@ const ContentManager: React.FC = () => {
               <p className="text-gray-600 text-sm line-clamp-2">
                 {content.content_text || 'No content'}
               </p>
+              {content.metadata && Object.keys(content.metadata).length > 0 && (
+                <div className="mt-2 text-xs text-gray-500">
+                  Metadata: {Object.keys(content.metadata).join(', ')}
+                </div>
+              )}
             </div>
           ))}
+          
+          {pageContent.length === 0 && (
+            <div className="text-center py-8">
+              <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No content blocks</h3>
+              <p className="text-gray-600">Add your first content block to get started.</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -547,9 +585,66 @@ const ContentManager: React.FC = () => {
                   <textarea
                     value={formData.content_text || ''}
                     onChange={(e) => setFormData({ ...formData, content_text: e.target.value })}
-                    rows={4}
+                    rows={6}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none resize-none"
+                    placeholder="Enter the main content text. Use \n\n for paragraph breaks."
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Image URL</label>
+                  <input
+                    type="url"
+                    value={formData.image_url || ''}
+                    onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none"
+                    placeholder="https://example.com/image.jpg"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Order Position</label>
+                    <input
+                      type="number"
+                      value={formData.order_position || 0}
+                      onChange={(e) => setFormData({ ...formData, order_position: Number(e.target.value) })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none"
+                      min="0"
+                    />
+                  </div>
+                  <div className="flex items-center pt-6">
+                    <input
+                      type="checkbox"
+                      id="page-active"
+                      checked={formData.active !== false}
+                      onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
+                      className="h-4 w-4 text-royal-blue focus:ring-royal-blue border-gray-300 rounded"
+                    />
+                    <label htmlFor="page-active" className="ml-2 block text-sm text-gray-900">
+                      Active (visible on website)
+                    </label>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Metadata (JSON) - For complex content like team members, values, etc.
+                  </label>
+                  <textarea
+                    value={typeof formData.metadata === 'object' ? JSON.stringify(formData.metadata, null, 2) : formData.metadata || '{}'}
+                    onChange={(e) => {
+                      try {
+                        const parsed = JSON.parse(e.target.value);
+                        setFormData({ ...formData, metadata: parsed });
+                      } catch {
+                        setFormData({ ...formData, metadata: e.target.value });
+                      }
+                    }}
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent outline-none resize-none font-mono text-sm"
+                    placeholder='{"buttons": [{"text": "Click Me", "link": "/page"}]}'
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Use JSON format for complex data like buttons, team members, values, etc.
+                  </p>
                 </div>
                 {formData.content_type === 'cta' && (
                   <>
