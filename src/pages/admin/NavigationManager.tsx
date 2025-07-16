@@ -38,13 +38,48 @@ const NavigationManager: React.FC = () => {
     { label: 'About Us', url: '/about' },
     { label: 'Corporate', url: '/corporate' },
     { label: 'Events', url: '/events' },
-    { label: 'Book Fun Space', url: '/booking' },
+    { label: 'Booking', url: '/booking' },
     { label: 'Shop', url: '/shop' },
     { label: 'Blog', url: '/blog' },
     { label: 'Contact Us', url: '/contact' },
     { label: 'Privacy Policy', url: '/privacy-policy' },
     { label: 'Terms & Conditions', url: '/terms-conditions' }
   ];
+
+  // Add default menu items if none exist
+  const createDefaultMenuItems = async () => {
+    try {
+      const defaultItems = [
+        { label: 'Home', url: '/', order_position: 1 },
+        { label: 'About Us', url: '/about', order_position: 2 },
+        { label: 'Corporate', url: '/corporate', order_position: 3 },
+        { label: 'Events', url: '/events', order_position: 4 },
+        { label: 'Booking', url: '/booking', order_position: 5 },
+        { label: 'Shop', url: '/shop', order_position: 6 },
+        { label: 'Blog', url: '/blog', order_position: 7 },
+        { label: 'Contact Us', url: '/contact', order_position: 8 }
+      ];
+
+      for (const item of defaultItems) {
+        await supabase.from('menu_items').insert([{
+          menu_type: 'main',
+          label: item.label,
+          url: item.url,
+          target: '_self',
+          parent_id: null,
+          order_position: item.order_position,
+          active: true,
+          icon: null
+        }]);
+      }
+      
+      alert('Default menu items created successfully!');
+      refetch();
+    } catch (err) {
+      console.error('Error creating default menu items:', err);
+      alert('Error creating default menu items');
+    }
+  };
 
   const iconOptions = [
     'Home', 'Info', 'Building2', 'Calendar', 'ShoppingCart', 
@@ -205,13 +240,24 @@ const NavigationManager: React.FC = () => {
     return (
       <div className="space-y-8">
         <div className="text-center">
-          <p className="text-red-600">Error loading menu items: {error}</p>
-          <button 
-            onClick={refetch}
-            className="mt-4 bg-royal-blue text-white px-4 py-2 rounded-lg hover:bg-blue-600"
-          >
-            Retry
-          </button>
+          <div className="flex space-x-3">
+            {menuItems.length === 0 && (
+              <button
+                onClick={createDefaultMenuItems}
+                className="bg-green-600 text-white px-6 py-3 rounded-xl hover:bg-green-700 transition-colors duration-300 flex items-center space-x-2 shadow-lg"
+              >
+                <Plus className="h-5 w-5" />
+                <span>Create Default Menu</span>
+              </button>
+            )}
+            <button
+              onClick={handleAddNew}
+              className="bg-royal-blue text-white px-6 py-3 rounded-xl hover:bg-blue-600 transition-colors duration-300 flex items-center space-x-2 shadow-lg"
+            >
+              <Plus className="h-5 w-5" />
+              <span>Add Menu Item</span>
+            </button>
+          </div>
         </div>
       </div>
     );

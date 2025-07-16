@@ -190,15 +190,19 @@ export const useMenuItems = () => {
 
   useEffect(() => {
     const fetchMenuItems = async () => {
+      setLoading(true)
+      setError(null)
       try {
         const { data, error } = await supabase
           .from('menu_items')
           .select('*')
+          .eq('active', true)
           .order('order_position', { ascending: true })
 
         if (error) throw error
         setMenuItems(data || [])
       } catch (err) {
+        console.error('Error fetching menu items:', err)
         setError(err instanceof Error ? err.message : 'An error occurred')
       } finally {
         setLoading(false)

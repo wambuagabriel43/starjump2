@@ -27,6 +27,7 @@ import SiteCustomizationManager from './SiteCustomizationManager';
 import DiagnosticPage from './DiagnosticPage';
 import NavigationManager from './NavigationManager';
 import PageManager from './PageManager';
+import { FileText } from 'lucide-react';
 
 const AdminDashboard: React.FC = () => {
   const { logout } = useAuth();
