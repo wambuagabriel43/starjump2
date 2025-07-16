@@ -239,6 +239,14 @@ export const useSiteSettings = () => {
           return
         }
 
+        // Check if supabase client is available
+        if (!supabase) {
+          console.warn('Supabase client not initialized, using default settings')
+          setSettings({})
+          setLoading(false)
+          return
+        }
+
         const { data, error } = await supabase
           .from('site_settings')
           .select('*')
@@ -253,7 +261,11 @@ export const useSiteSettings = () => {
         setSettings(settingsMap)
       } catch (err) {
         console.error('Error fetching site settings:', err)
-        setError(err instanceof Error ? err.message : 'An error occurred')
+        if (err instanceof TypeError && err.message.includes('Failed to fetch')) {
+          setError('Unable to connect to database. Please check your internet connection.')
+        } else {
+          setError(err instanceof Error ? err.message : 'An error occurred')
+        }
         // Set empty settings as fallback
         setSettings({})
       } finally {
@@ -279,6 +291,14 @@ export const useSiteSettings = () => {
         return
       }
 
+      // Check if supabase client is available
+      if (!supabase) {
+        console.warn('Supabase client not initialized, using default settings')
+        setSettings({})
+        setLoading(false)
+        return
+      }
+
       const { data, error } = await supabase
         .from('site_settings')
         .select('*')
@@ -293,7 +313,11 @@ export const useSiteSettings = () => {
       setSettings(settingsMap)
     } catch (err) {
       console.error('Error refetching site settings:', err)
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      if (err instanceof TypeError && err.message.includes('Failed to fetch')) {
+        setError('Unable to connect to database. Please check your internet connection.')
+      } else {
+        setError(err instanceof Error ? err.message : 'An error occurred')
+      }
       // Set empty settings as fallback
       setSettings({})
     } finally {
@@ -325,23 +349,28 @@ export const useMenuItems = () => {
           return
         }
 
+        // Check if supabase client is available
+        if (!supabase) {
+          console.warn('Supabase client not initialized, using empty menu items')
+          setMenuItems([])
+          setLoading(false)
+          return
+        }
+
         const { data, error } = await supabase
           .from('menu_items')
           .select('*')
           .eq('active', true)
           .order('order_position', { ascending: true })
 
-        if (error) {
-          console.error('Supabase menu items query error:', error)
-          throw new Error(`Database error: ${error.message}`)
-        }
+        if (error) throw error
         setMenuItems(data || [])
       } catch (err) {
         console.error('Error fetching menu items:', err)
         if (err instanceof TypeError && err.message.includes('Failed to fetch')) {
-          setError('Unable to connect to database. Please check your internet connection or contact support.')
+          setError('Unable to connect to database. Please check your internet connection.')
         } else {
-          setError(err instanceof Error ? err.message : 'An error occurred while loading menu items')
+          setError(err instanceof Error ? err.message : 'An error occurred')
         }
         // Use empty menu items as fallback
         setMenuItems([])
@@ -368,23 +397,28 @@ export const useMenuItems = () => {
         return
       }
 
+      // Check if supabase client is available
+      if (!supabase) {
+        console.warn('Supabase client not initialized, using empty menu items')
+        setMenuItems([])
+        setLoading(false)
+        return
+      }
+
       const { data, error } = await supabase
         .from('menu_items')
         .select('*')
         .eq('active', true)
         .order('order_position', { ascending: true })
 
-      if (error) {
-        console.error('Supabase menu items query error:', error)
-        throw new Error(`Database error: ${error.message}`)
-      }
+      if (error) throw error
       setMenuItems(data || [])
     } catch (err) {
       console.error('Error refetching menu items:', err)
       if (err instanceof TypeError && err.message.includes('Failed to fetch')) {
-        setError('Unable to connect to database. Please check your internet connection or contact support.')
+        setError('Unable to connect to database. Please check your internet connection.')
       } else {
-        setError(err instanceof Error ? err.message : 'An error occurred while loading menu items')
+        setError(err instanceof Error ? err.message : 'An error occurred')
       }
       // Use empty menu items as fallback
       setMenuItems([])
