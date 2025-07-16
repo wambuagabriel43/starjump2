@@ -144,7 +144,10 @@ export const usePageContent = (pageSlug: string, sectionKey?: string) => {
       setError(null)
       try {
         // Check if Supabase is configured
-        if (!supabase) {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+        
+        if (!supabaseUrl || !supabaseKey || !supabase) {
           debugLog('Supabase not configured, using empty content');
           setContent([])
           setLoading(false)
@@ -152,7 +155,7 @@ export const usePageContent = (pageSlug: string, sectionKey?: string) => {
         }
 
         let query = supabase
-          .from('page_content_blocks')
+          .from('page_sections')
           .select('*')
           .eq('page_slug', pageSlug)
           .eq('active', true)
@@ -170,7 +173,28 @@ export const usePageContent = (pageSlug: string, sectionKey?: string) => {
         }
         
         debugLog(`Successfully fetched ${data?.length || 0} content blocks for page: ${pageSlug}`, data);
-        setContent(data || [])
+        
+        // Transform page_sections data to match PageContentBlock interface
+        const transformedData = (data || []).map(item => ({
+          id: item.id,
+          page_slug: item.page_id,
+          section_key: item.section_type,
+          content_type: item.section_type,
+          title: item.title,
+          subtitle: item.subtitle,
+          content_text: item.content_text,
+          image_url: item.image_url,
+          video_url: item.video_url,
+          button_text: item.settings?.button_text,
+          button_link: item.settings?.button_link,
+          order_position: item.order_position,
+          metadata: item.custom_data || {},
+          active: item.active,
+          created_at: item.created_at,
+          updated_at: item.updated_at
+        }))
+        
+        setContent(transformedData)
       } catch (err) {
         debugLog('Exception fetching page content:', err);
         setError(err instanceof Error ? err.message : 'An error occurred')
