@@ -9,7 +9,15 @@ const AdminLogin: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-gradient-to-br from-royal-blue via-blue-600 to-blue-700">
+        <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   if (isAuthenticated) {
     return <Navigate to="/admin" replace />;
@@ -23,9 +31,9 @@ const AdminLogin: React.FC = () => {
     // Simulate loading time
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    const success = login(username, password);
-    if (!success) {
-      setError('Invalid username or password');
+    const result = await login(username, password);
+    if (!result.success) {
+      setError(result.error || 'Invalid credentials');
     }
     setIsLoading(false);
   };
@@ -82,16 +90,16 @@ const AdminLogin: React.FC = () => {
               <label htmlFor="password" className="flex items-center text-royal-blue font-semibold">
                 <Lock className="h-5 w-5 mr-2" />
                 Password
-              </label>
+                  Email
               <div className="relative">
                 <input
-                  type={showPassword ? 'text' : 'password'}
+                  type="email"
                   id="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   className="w-full px-4 py-3 pr-12 border-2 border-gray-200 rounded-xl focus:border-royal-blue focus:ring-2 focus:ring-royal-blue/20 transition-colors duration-300 outline-none"
-                  placeholder="Enter your password"
+                  placeholder="admin@starjump.co.ke"
                 />
                 <button
                   type="button"
@@ -128,7 +136,7 @@ const AdminLogin: React.FC = () => {
           <div className="mt-8 p-4 bg-gray-50 rounded-xl">
             <h3 className="font-bold text-royal-blue mb-2 text-sm">Demo Credentials:</h3>
             <div className="text-sm text-gray-600 space-y-1">
-              <div>Username: <span className="font-mono bg-white px-2 py-1 rounded">admin</span></div>
+              <div>Email: <span className="font-mono bg-white px-2 py-1 rounded">admin@starjump.co.ke</span></div>
               <div>Password: <span className="font-mono bg-white px-2 py-1 rounded">starjump2024</span></div>
             </div>
           </div>

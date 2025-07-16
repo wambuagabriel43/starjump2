@@ -91,26 +91,56 @@ const ContentManager: React.FC = () => {
     { value: 'client_types_grid', label: 'Client Types Grid' },
     { value: 'cta', label: 'Call to Action' },
     { value: 'cta_section', label: 'CTA Section' },
-    { value: 'image', label: 'Image' },
-    { value: 'video', label: 'Video' }
-  ];
+        // First ensure the page exists in page_content table
+        const { data: pageData, error: pageError } = await supabase
+          .from('page_content')
+          .select('id')
+          .eq('page_slug', selectedPageSlug)
+          .maybeSingle();
 
-  const handleSavePageContent = async () => {
-    console.log('[ContentManager] Starting to save page content:', formData);
-    setIsSaving(true);
-    try {
-      if (isAddingNew) {
+        let pageId = pageData?.id;
+
+        if (!pageId) {
+          // Create the page if it doesn't exist
+          const { data: newPageData, error: createPageError } = await supabase
+            .from('page_content')
+            .insert([{
+              page_slug: selectedPageSlug,
+              content_data: {},
+              meta_title: selectedPageSlug.charAt(0).toUpperCase() + selectedPageSlug.slice(1),
+              meta_description: `${selectedPageSlug} page content`,
+              status: 'published'
+            }])
+            .select('id')
+            .single();
+
+          if (createPageError) throw createPageError;
+          pageId = newPageData.id;
+        }
+
+        // Now insert into page_sections
         const { error } = await supabase
-          .from('page_content_blocks')
+          .from('page_sections')
           .insert([{
-            ...formData,
-            page_slug: selectedPage
+            page_id: pageId,
+            section_type: pageContentForm.content_type,
+            title: pageContentForm.title,
+            subtitle: pageContentForm.subtitle,
+            content_text: pageContentForm.content_text,
+            image_url: pageContentForm.image_url,
+            settings: {
+        const { error } = await supabase
+          .from('page_sections')
+          .update({
+            section_type: pageContentForm.content_type,
           }]);
         
         if (error) throw error;
         console.log('[ContentManager] Page content added successfully');
-        alert('Content added successfully!');
-      } else if (editingContent) {
+            settings: {
+              button_text: pageContentForm.button_text,
+              button_link: pageContentForm.button_link
+            },
         const { error } = await supabase
           .from('page_content_blocks')
           .update(formData)
