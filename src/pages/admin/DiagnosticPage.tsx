@@ -103,10 +103,17 @@ const DiagnosticPage: React.FC = () => {
     // Test storage permissions with a small test file
     addLog('Testing storage permissions...');
     try {
-      const testFile = new File(['test'], 'test.txt', { type: 'text/plain' });
+      // Create a minimal 1x1 pixel GIF image (43 bytes)
+      const gifData = new Uint8Array([
+        0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0x01, 0x00, 0x01, 0x00, 0x80, 0x00, 0x00,
+        0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x21, 0xF9, 0x04, 0x01, 0x00, 0x00, 0x00,
+        0x00, 0x2C, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x02, 0x02,
+        0x44, 0x01, 0x00, 0x3B
+      ]);
+      const testFile = new File([gifData], `test-${Date.now()}.gif`, { type: 'image/gif' });
       const { data, error } = await supabase.storage
         .from('general-uploads')
-        .upload(`test-${Date.now()}.txt`, testFile);
+        .upload(`test-${Date.now()}.gif`, testFile);
       
       if (error) {
         setDiagnostics(prev => ({ ...prev, storagePermissions: 'error' }));
