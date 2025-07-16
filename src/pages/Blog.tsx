@@ -1,87 +1,9 @@
 import React from 'react';
 import { Calendar, User, Tag, ArrowRight, Clock } from 'lucide-react';
+import { useBlogPosts } from '../hooks/useContentData';
 
 const Blog: React.FC = () => {
-  const blogPosts = [
-    {
-      id: 1,
-      title: 'Planning the Perfect Children\'s Birthday Party in Nairobi',
-      excerpt: 'Discover expert tips for organizing an unforgettable birthday celebration that will have kids talking for weeks. From choosing the right venue to selecting age-appropriate activities.',
-      content: 'Planning a children\'s birthday party can be both exciting and overwhelming. Here are our top tips for creating magical memories...',
-      author: 'Sarah Wanjiku',
-      date: '2024-11-15',
-      readTime: '5 min read',
-      category: 'Parenting Tips',
-      image: 'https://images.pexels.com/photos/1619654/pexels-photo-1619654.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&dpr=1',
-      featured: true,
-      tags: ['Birthday Parties', 'Planning', 'Kids Events']
-    },
-    {
-      id: 2,
-      title: 'Safety First: Our Equipment Standards and Protocols',
-      excerpt: 'Learn about Star Jump\'s comprehensive safety measures and how we ensure every piece of equipment meets international standards for child safety.',
-      content: 'At Star Jump, safety is our top priority. Every piece of equipment undergoes rigorous testing...',
-      author: 'David Kimani',
-      date: '2024-11-10',
-      readTime: '7 min read',
-      category: 'Safety',
-      image: 'https://images.pexels.com/photos/1104014/pexels-photo-1104014.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&dpr=1',
-      featured: true,
-      tags: ['Safety', 'Equipment', 'Standards']
-    },
-    {
-      id: 3,
-      title: 'Corporate Events: Building Team Spirit Through Play',
-      excerpt: 'Explore how incorporating play elements into corporate events can boost team morale, improve communication, and create lasting bonds among colleagues.',
-      content: 'Corporate events don\'t have to be boring. Discover how play can transform your next company gathering...',
-      author: 'Grace Achieng',
-      date: '2024-11-05',
-      readTime: '6 min read',
-      category: 'Corporate',
-      image: 'https://images.pexels.com/photos/1292294/pexels-photo-1292294.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&dpr=1',
-      featured: false,
-      tags: ['Corporate Events', 'Team Building', 'Business']
-    },
-    {
-      id: 4,
-      title: 'The Psychology of Play: Why Fun Matters for Child Development',
-      excerpt: 'Understanding the crucial role of play in children\'s cognitive, social, and emotional development, and how quality play equipment supports healthy growth.',
-      content: 'Play is not just fun - it\'s fundamental to healthy child development. Research shows...',
-      author: 'Dr. Mary Njeri',
-      date: '2024-10-28',
-      readTime: '8 min read',
-      category: 'Parenting Tips',
-      image: 'https://images.pexels.com/photos/1619654/pexels-photo-1619654.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&dpr=1',
-      featured: false,
-      tags: ['Child Development', 'Psychology', 'Education']
-    },
-    {
-      id: 5,
-      title: 'Star Jump Partners with Local Schools for Educational Fun',
-      excerpt: 'Announcing our new partnership program with Nairobi schools to provide educational play experiences that combine learning with physical activity.',
-      content: 'We\'re excited to announce our new educational partnership program...',
-      author: 'Sarah Wanjiku',
-      date: '2024-10-20',
-      readTime: '4 min read',
-      category: 'Partnerships',
-      image: 'https://images.pexels.com/photos/1104014/pexels-photo-1104014.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&dpr=1',
-      featured: false,
-      tags: ['Partnerships', 'Education', 'Schools']
-    },
-    {
-      id: 6,
-      title: 'Seasonal Event Ideas: Making the Most of Kenya\'s Weather',
-      excerpt: 'Creative ideas for outdoor and indoor events throughout Kenya\'s seasons, including rainy season alternatives and dry season spectacular celebrations.',
-      content: 'Kenya\'s diverse climate offers unique opportunities for different types of events...',
-      author: 'David Kimani',
-      date: '2024-10-15',
-      readTime: '6 min read',
-      category: 'Events',
-      image: 'https://images.pexels.com/photos/1292294/pexels-photo-1292294.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&dpr=1',
-      featured: false,
-      tags: ['Seasonal Events', 'Weather', 'Planning']
-    }
-  ];
+  const { posts: blogPosts, loading, error } = useBlogPosts();
 
   const categories = ['All', 'Parenting Tips', 'Events', 'Safety', 'Corporate', 'Partnerships'];
   const [selectedCategory, setSelectedCategory] = React.useState('All');
@@ -92,6 +14,28 @@ const Blog: React.FC = () => {
 
   const featuredPosts = blogPosts.filter(post => post.featured);
   const latestPosts = blogPosts.slice(0, 3);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-royal-blue border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-white text-xl">Loading blog posts...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-white text-xl mb-4">Unable to load blog posts</p>
+          <p className="text-white/80">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">
@@ -133,7 +77,7 @@ const Blog: React.FC = () => {
               >
                 <div className="relative h-64 overflow-hidden">
                   <img
-                    src={post.image}
+                    src={post.image_url || 'https://images.pexels.com/photos/1619654/pexels-photo-1619654.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&dpr=1'}
                     alt={post.title}
                     className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
                   />
@@ -157,7 +101,7 @@ const Blog: React.FC = () => {
                     </div>
                     <div className="flex items-center">
                       <Clock className="h-4 w-4 mr-1" />
-                      {post.readTime}
+                      {post.read_time}
                     </div>
                   </div>
 
@@ -224,7 +168,7 @@ const Blog: React.FC = () => {
               >
                 <div className="relative h-48 overflow-hidden">
                   <img
-                    src={post.image}
+                    src={post.image_url || 'https://images.pexels.com/photos/1619654/pexels-photo-1619654.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&dpr=1'}
                     alt={post.title}
                     className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
                   />
@@ -254,7 +198,7 @@ const Blog: React.FC = () => {
                   </p>
 
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">{post.readTime}</span>
+                    <span className="text-xs text-gray-500">{post.read_time}</span>
                     <button className="bg-gradient-to-r from-bright-orange to-fun-pink text-white font-bold py-2 px-4 rounded-full hover:from-fun-pink hover:to-bright-orange transition-all duration-300 transform hover:scale-105 shadow-lg text-sm">
                       Read More
                     </button>

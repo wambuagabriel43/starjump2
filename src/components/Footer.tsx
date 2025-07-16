@@ -2,9 +2,11 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Star, Facebook, Instagram, Linkedin, MessageCircle, MapPin, Phone, Mail, Clock } from 'lucide-react';
 import { useSiteAssets } from '../hooks/useSupabaseData';
+import { useSiteContent, getContentByKey } from '../hooks/useContentData';
 
 const Footer: React.FC = () => {
   const { assets } = useSiteAssets();
+  const { content: siteContent, loading: contentLoading } = useSiteContent();
   
   // Get footer logo and positioned images
   const footerLogo = assets.find(asset => 
@@ -16,7 +18,13 @@ const Footer: React.FC = () => {
     asset.asset_type === 'footer_image' && asset.active
   );
 
-  const locations = [
+  // Get dynamic content
+  const companyDescription = getContentByKey(siteContent, 'company_description');
+  const contactPhone = getContentByKey(siteContent, 'contact_phone');
+  const contactEmail = getContentByKey(siteContent, 'contact_email');
+  const businessHours = getContentByKey(siteContent, 'business_hours');
+  const locationsText = getContentByKey(siteContent, 'locations');
+  const locations = locationsText ? locationsText.split('\n') : [
     'Greenspan Mall, Nairobi',
     'Garden City Mall, Nairobi', 
     'Galleria Mall, Nairobi'
@@ -84,7 +92,7 @@ const Footer: React.FC = () => {
               )}
             </Link>
             <p className="text-themed opacity-90 text-sm leading-relaxed mb-4">
-              Kenya's leading provider of fun stations and children's play areas for private and corporate events. Bringing joy to every celebration!
+              {companyDescription || "Kenya's leading provider of fun stations and children's play areas for private and corporate events. Bringing joy to every celebration!"}
             </p>
             
             {/* Social Media */}
@@ -98,7 +106,7 @@ const Footer: React.FC = () => {
               <a href="#" className="bg-white/10 hover:bg-white hover:text-royal-blue p-2 rounded-full transition-all duration-300">
                 <Linkedin className="h-5 w-5" />
               </a>
-              <a href="https://wa.me/254700000000" className="bg-green-500 hover:bg-green-600 p-2 rounded-full transition-all duration-300">
+              <a href={`https://wa.me/${contactPhone?.replace(/[^0-9]/g, '') || '254700000000'}`} className="bg-green-500 hover:bg-green-600 p-2 rounded-full transition-all duration-300">
                 <MessageCircle className="h-5 w-5" />
               </a>
             </div>
@@ -122,17 +130,23 @@ const Footer: React.FC = () => {
             <div className="space-y-3">
               <div className="flex items-center space-x-2">
                 <Phone className="h-4 w-4 accent-themed" />
-                <span className="text-themed opacity-90 text-sm">+254 700 000 000</span>
+                <span className="text-themed opacity-90 text-sm">{contactPhone || '+254 700 000 000'}</span>
               </div>
               <div className="flex items-center space-x-2">
                 <Mail className="h-4 w-4 accent-themed" />
-                <span className="text-themed opacity-90 text-sm">info@starjump.co.ke</span>
+                <span className="text-themed opacity-90 text-sm">{contactEmail || 'info@starjump.co.ke'}</span>
               </div>
               <div className="flex items-start space-x-2">
                 <Clock className="h-4 w-4 accent-themed mt-1" />
                 <div className="text-themed opacity-90 text-sm">
-                  <div>Mon - Fri: 8:00 AM - 6:00 PM</div>
-                  <div>Sat - Sun: 9:00 AM - 5:00 PM</div>
+                  {businessHours ? businessHours.split('\n').map((line, index) => (
+                    <div key={index}>{line}</div>
+                  )) : (
+                    <>
+                      <div>Mon - Fri: 8:00 AM - 6:00 PM</div>
+                      <div>Sat - Sun: 9:00 AM - 5:00 PM</div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

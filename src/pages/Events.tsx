@@ -1,40 +1,23 @@
 import React from 'react';
 import { Calendar, MapPin, Clock, Users, Star } from 'lucide-react';
 import { useEvents } from '../hooks/useSupabaseData';
+import { usePageContent, useStaticEvents } from '../hooks/useContentData';
 
 const Events: React.FC = () => {
   const { events, loading, error } = useEvents();
+  const { content: pageContent, loading: contentLoading } = usePageContent('events');
+  const { events: staticEvents, loading: staticLoading } = useStaticEvents();
 
-  const featuredEvents = [
-    {
-      id: 'featured-1',
-      title: 'Nairobi Kids Festival 2024',
-      date: 'December 15-17, 2024',
-      time: '10:00 AM - 6:00 PM',
-      location: 'Uhuru Park, Nairobi',
-      description: 'Join us for the biggest children\'s festival in Kenya! Three days of non-stop fun with bouncy castles, slides, games, and entertainment for the whole family.',
-      image_url: 'https://images.pexels.com/photos/1619654/pexels-photo-1619654.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&dpr=1',
-      category: 'Festival',
-      featured: true,
-      attendees: '5000+',
-      price: 'KES 500'
-    },
-    {
-      id: 'featured-2',
-      title: 'Garden City Mall Family Day',
-      date: 'November 30, 2024',
-      time: '11:00 AM - 7:00 PM',
-      location: 'Garden City Mall, Nairobi',
-      description: 'Special family day event featuring our premium play equipment, face painting, balloon artists, and exciting prizes for kids of all ages.',
-      image_url: 'https://images.pexels.com/photos/1104014/pexels-photo-1104014.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&dpr=1',
-      category: 'Mall Event',
-      featured: true,
-      attendees: '2000+',
-      price: 'Free Entry'
-    }
-  ];
+  // Get page content sections
+  const heroContent = pageContent.find(c => c.section_key === 'hero');
+  const featuredSectionContent = pageContent.find(c => c.section_key === 'featured_section');
+  const allEventsSectionContent = pageContent.find(c => c.section_key === 'all_events_section');
+  const ctaSectionContent = pageContent.find(c => c.section_key === 'cta_section');
 
-  if (loading) {
+  // Get featured static events
+  const featuredEvents = staticEvents.filter(event => event.featured);
+
+  if (loading || contentLoading || staticLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -57,10 +40,10 @@ const Events: React.FC = () => {
 
         <div className="max-w-6xl mx-auto text-center relative">
           <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 drop-shadow-lg">
-            Upcoming <span className="text-star-yellow">Events</span>
+            {heroContent?.title || 'Upcoming Events'}
           </h1>
           <p className="text-xl md:text-2xl text-white/95 max-w-4xl mx-auto leading-relaxed">
-            Join us at exciting events across Kenya! From festivals to corporate gatherings, experience the magic of Star Jump.
+            {heroContent?.content_text || 'Join us at exciting events across Kenya! From festivals to corporate gatherings, experience the magic of Star Jump.'}
           </p>
         </div>
       </section>
@@ -70,10 +53,10 @@ const Events: React.FC = () => {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 drop-shadow-lg">
-              Featured <span className="text-star-yellow">Events</span>
+              {featuredSectionContent?.title || 'Featured Events'}
             </h2>
             <p className="text-xl text-white/90 max-w-3xl mx-auto">
-              Don't miss these amazing upcoming events and celebrations
+              {featuredSectionContent?.content_text || 'Don\'t miss these amazing upcoming events and celebrations'}
             </p>
           </div>
 
@@ -93,7 +76,7 @@ const Events: React.FC = () => {
                     {event.category}
                   </div>
                   <div className="absolute top-4 right-4 bg-white/90 text-royal-blue px-3 py-1 rounded-full font-bold text-sm">
-                    {event.price}
+                    {event.price_text}
                   </div>
                   <div className="absolute bottom-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full font-bold text-sm flex items-center">
                     <Star className="h-4 w-4 mr-1" fill="currentColor" />
@@ -132,10 +115,10 @@ const Events: React.FC = () => {
                   <div className="flex space-x-4">
                     <button className="flex-1 bg-gradient-to-r from-royal-blue to-blue-600 text-white font-bold py-3 px-6 rounded-full hover:from-blue-600 hover:to-royal-blue transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
                       Learn More
-                    </button>
+                    {event.button_primary_text}
                     <button className="bg-gradient-to-r from-star-yellow to-bright-orange text-royal-blue font-bold py-3 px-6 rounded-full hover:from-bright-orange hover:to-star-yellow transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
                       Register
-                    </button>
+                    {event.button_secondary_text}
                   </div>
                 </div>
               </div>
@@ -149,7 +132,7 @@ const Events: React.FC = () => {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 drop-shadow-lg">
-              All <span className="text-star-yellow">Events</span>
+              {allEventsSectionContent?.title || 'All Events'}
             </h2>
           </div>
 
@@ -232,10 +215,10 @@ const Events: React.FC = () => {
         <div className="max-w-4xl mx-auto text-center">
           <div className="bg-gradient-to-br from-white to-gray-50 rounded-3xl p-12 shadow-2xl">
             <h2 className="text-4xl font-bold text-royal-blue mb-6">
-              Want Star Jump at Your Event?
+              {ctaSectionContent?.title || 'Want Star Jump at Your Event?'}
             </h2>
             <p className="text-xl text-gray-700 mb-8 leading-relaxed">
-              Planning an event? Let us bring the fun to you! Contact us for custom event solutions and equipment rentals.
+              {ctaSectionContent?.content_text || 'Planning an event? Let us bring the fun to you! Contact us for custom event solutions and equipment rentals.'}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a
