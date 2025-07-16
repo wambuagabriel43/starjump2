@@ -80,12 +80,12 @@ const Header: React.FC = () => {
                   <img 
                     src={headerLogo.image_url} 
                     alt="Star Jump Logo" 
-                    className="h-16 w-auto transition-transform duration-300 group-hover:scale-105"
+                    className="h-12 w-auto max-w-48 transition-transform duration-300 group-hover:scale-105"
                     onError={(e) => {
                       console.error('Header logo failed to load:', headerLogo.image_url);
-                      // Fallback to default logo
                       e.currentTarget.style.display = 'none';
-                      e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                      const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                      if (fallback) fallback.classList.remove('hidden');
                     }}
                   />
                 ) : null}

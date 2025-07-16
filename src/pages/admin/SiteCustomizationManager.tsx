@@ -447,21 +447,32 @@ const SiteCustomizationManager: React.FC = () => {
                 <img 
                   src={asset.image_url} 
                   alt="Footer image" 
-                  className="max-w-20 max-h-20 object-contain border border-white shadow-sm"
+                  className="max-w-20 max-h-20 object-contain border border-white shadow-sm rounded"
+                  onError={(e) => {
+                    console.error('Footer image failed to load:', asset.image_url);
+                    e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik00MCAyMEw1MCAzMEgzMEw0MCAyMFoiIGZpbGw9IiM5QjlCQTAiLz4KPHA+PC9wYXRoPgo8L3N2Zz4K';
+                  }}
                 />
                 <button
                   onClick={() => handleDeleteAsset(asset)}
-                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-all duration-200"
+                  title="Delete image"
                 >
                   <Trash2 className="h-3 w-3" />
                 </button>
-                <div className="absolute -bottom-6 left-0 bg-black text-white text-xs px-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute -bottom-6 left-0 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                   <Move className="h-3 w-3 inline mr-1" />
                   Drag to move
                 </div>
               </div>
             </div>
           ))}
+          
+          {assets.filter(asset => asset.asset_type === 'footer_image').length === 0 && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <p className="text-gray-400 text-sm">No footer images uploaded</p>
+            </div>
+          )}
         </div>
       </div>
 

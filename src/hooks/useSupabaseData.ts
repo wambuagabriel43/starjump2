@@ -123,6 +123,8 @@ export const useSiteAssets = (assetType?: string) => {
 
   useEffect(() => {
     const fetchAssets = async () => {
+      setLoading(true)
+      setError(null)
       try {
         let query = supabase
           .from('site_assets')
@@ -138,6 +140,7 @@ export const useSiteAssets = (assetType?: string) => {
         if (error) throw error
         setAssets(data || [])
       } catch (err) {
+        console.error('Error fetching site assets:', err)
         setError(err instanceof Error ? err.message : 'An error occurred')
       } finally {
         setLoading(false)
@@ -147,7 +150,32 @@ export const useSiteAssets = (assetType?: string) => {
     fetchAssets()
   }, [assetType])
 
-  return { assets, loading, error, refetch: () => window.location.reload() }
+  const refetch = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      let query = supabase
+        .from('site_assets')
+        .select('*')
+        .eq('active', true)
+
+      if (assetType) {
+        query = query.eq('asset_type', assetType)
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false })
+
+      if (error) throw error
+      setAssets(data || [])
+    } catch (err) {
+      console.error('Error refetching site assets:', err)
+      setError(err instanceof Error ? err.message : 'An error occurred')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return { assets, loading, error, refetch }
 }
 
 export const useSiteSettings = () => {

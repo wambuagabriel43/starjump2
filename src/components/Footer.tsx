@@ -64,17 +64,23 @@ const Footer: React.FC = () => {
                   <img 
                     src={footerLogo.image_url} 
                     alt="Star Jump Logo" 
-                    className="h-12 w-auto"
+                    className="h-10 w-auto max-w-32"
+                    onError={(e) => {
+                      console.error('Footer logo failed to load:', footerLogo.image_url);
+                      e.currentTarget.style.display = 'none';
+                      const fallback = e.currentTarget.parentElement?.nextElementSibling as HTMLElement;
+                      if (fallback) fallback.classList.remove('hidden');
+                    }}
                   />
                 </div>
               ) : (
-                <>
+                <div className={footerLogo ? 'hidden' : ''}>
                   <div className="flex items-center bg-white rounded-full p-2 shadow-lg">
                     <Star className="h-6 w-6 text-royal-blue mr-1" fill="currentColor" />
                     <span className="font-bold text-lg text-royal-blue">STAR</span>
                   </div>
                   <span className="font-bold text-xl accent-themed">JUMP</span>
-                </>
+                </div>
               )}
             </Link>
             <p className="text-themed opacity-90 text-sm leading-relaxed mb-4">
