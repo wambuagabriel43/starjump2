@@ -9,6 +9,36 @@ const SiteCustomizationManager: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [draggedAsset, setDraggedAsset] = useState<SiteAsset | null>(null);
 
+  const handleMenuModeChange = async (mode: string) => {
+    try {
+      const { error } = await supabase.rpc('upsert_site_setting', {
+        key: 'menu_navigation_mode',
+        value: mode,
+        type: 'text'
+      });
+
+      if (error) throw error;
+      refetchSettings();
+    } catch (err) {
+      alert('Error updating menu mode: ' + (err instanceof Error ? err.message : 'Unknown error'));
+    }
+  };
+
+  const handleMenuGraphicsSizeChange = async (size: number) => {
+    try {
+      const { error } = await supabase.rpc('upsert_site_setting', {
+        key: 'menu_graphics_size',
+        value: size.toString(),
+        type: 'number'
+      });
+
+      if (error) throw error;
+      refetchSettings();
+    } catch (err) {
+      alert('Error updating menu graphics size: ' + (err instanceof Error ? err.message : 'Unknown error'));
+    }
+  };
+
   const pageBackgrounds = [
     { key: 'home_background_color', label: 'Home Page' },
     { key: 'about_background_color', label: 'About Page' },
@@ -534,7 +564,68 @@ const SiteCustomizationManager: React.FC = () => {
 
       {/* Menu Graphics */}
       <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-        <h2 className="text-xl font-bold text-gray-900 mb-6">Menu Item Graphics</h2>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center">
+            <h2 className="text-xl font-bold text-gray-900 mr-4">Menu Navigation Settings</h2>
+          </div>
+        </div>
+
+        {/* Menu Design Mode Toggle */}
+        <div className="mb-8 p-4 bg-blue-50 rounded-lg">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800">Navigation Style</h3>
+              <p className="text-sm text-gray-600">Choose between text-based navigation or graphics-only navigation</p>
+            </div>
+            <div className="flex items-center space-x-4">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="menuMode"
+                  value="text"
+                  checked={settings.menu_navigation_mode !== 'graphics'}
+                  onChange={() => handleMenuModeChange('text')}
+                  className="mr-2"
+                />
+                <span className="text-sm font-medium">Text Navigation</span>
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="menuMode"
+                  value="graphics"
+                  checked={settings.menu_navigation_mode === 'graphics'}
+                  onChange={() => handleMenuModeChange('graphics')}
+                  className="mr-2"
+                />
+                <span className="text-sm font-medium">Graphics Only</span>
+              </label>
+            </div>
+          </div>
+
+          {/* Menu Graphics Size Control */}
+          {settings.menu_navigation_mode === 'graphics' && (
+            <div className="mt-4 p-4 bg-white rounded-lg border">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Menu Graphics Size: {settings.menu_graphics_size || 60}px
+              </label>
+              <input
+                type="range"
+                min="24"
+                max="80"
+                value={settings.menu_graphics_size || 60}
+                onChange={(e) => handleMenuGraphicsSizeChange(Number(e.target.value))}
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+              />
+              <div className="flex justify-between text-xs text-gray-500 mt-1">
+                <span>24px</span>
+                <span>80px</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">Upload Menu Graphics</h3>
         
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
           {menuItems.map((menuItem) => (

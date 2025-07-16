@@ -19,20 +19,26 @@ const Header: React.FC = () => {
     .filter(item => item.active && item.menu_type === 'main')
     .sort((a, b) => a.order_position - b.order_position);
 
+  const isGraphicsMode = settings.menu_navigation_mode === 'graphics';
+
   // Generate menu graphics CSS
   const menuGraphicsCSS = assets
     .filter(asset => asset.asset_type === 'menu_graphic' && asset.active)
     .map((asset) => {
       if (!asset.menu_item) return '';
       const menuClass = asset.menu_item.toLowerCase().replace(/\s+/g, '-');
+      const graphicsSize = settings.menu_graphics_size || 60;
+      const isGraphicsMode = settings.menu_navigation_mode === 'graphics';
+      
       return `
         .menu-${menuClass} {
           background-image: url('${asset.image_url}');
-          background-size: 60px 60px;
+          background-size: ${graphicsSize}px ${graphicsSize}px;
           background-position: center;
           background-repeat: no-repeat;
-          width: 60px;
-          height: 60px;
+          width: ${graphicsSize}px;
+          height: ${graphicsSize}px;
+          ${isGraphicsMode ? 'border-radius: 8px;' : ''}
         }
       `;
     }).join('\n');
