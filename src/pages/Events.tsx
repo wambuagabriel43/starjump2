@@ -115,10 +115,10 @@ const Events: React.FC = () => {
                   <div className="flex space-x-4">
                     <button className="flex-1 bg-gradient-to-r from-royal-blue to-blue-600 text-white font-bold py-3 px-6 rounded-full hover:from-blue-600 hover:to-royal-blue transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
                       Learn More
-                    {event.button_primary_text}
+                    </button>
                     <button className="bg-gradient-to-r from-star-yellow to-bright-orange text-royal-blue font-bold py-3 px-6 rounded-full hover:from-bright-orange hover:to-star-yellow transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
                       Register
-                    {event.button_secondary_text}
+                    </button>
                   </div>
                 </div>
               </div>
