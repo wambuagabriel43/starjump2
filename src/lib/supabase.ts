@@ -139,6 +139,57 @@ export const productCategories = [
   'Party Supplies'
 ]
 
+// Required storage buckets for the application
+export const requiredStorageBuckets = [
+  'logos',
+  'menu-graphics', 
+  'footer-images',
+  'general-uploads',
+  'blog-images',
+  'event-images',
+  'product-images'
+]
+
+// Function to create storage buckets if they don't exist
+export const createStorageBucketsIfNeeded = async () => {
+  if (!supabase) return { success: false, error: 'Supabase not configured' }
+  
+  try {
+    const { data: existingBuckets, error: listError } = await supabase.storage.listBuckets()
+    if (listError) throw listError
+    
+    const existingBucketNames = existingBuckets?.map(b => b.name) || []
+    const missingBuckets = requiredStorageBuckets.filter(bucket => !existingBucketNames.includes(bucket))
+    
+    const results = []
+    for (const bucketName of missingBuckets) {
+      const { data, error } = await supabase.storage.createBucket(bucketName, {
+        public: true,
+        allowedMimeTypes: ['image/*'],
+        fileSizeLimit: 5242880 // 5MB
+      })
+      
+      if (error) {
+        console.warn(`Could not create bucket ${bucketName}:`, error)
+        results.push({ bucket: bucketName, success: false, error: error.message })
+      } else {
+        console.log(`Created bucket: ${bucketName}`)
+        results.push({ bucket: bucketName, success: true })
+      }
+    }
+    
+    return { 
+      success: true, 
+      created: results.filter(r => r.success).length,
+      failed: results.filter(r => !r.success).length,
+      results 
+    }
+  } catch (err) {
+    console.error('Error creating storage buckets:', err)
+    return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
+  }
+}
+
 // Storage bucket helpers
 export const uploadFile = async (bucket: string, file: File, path?: string) => {
   console.log('uploadFile called with:', { bucket, fileName: file.name, fileSize: file.size, path });

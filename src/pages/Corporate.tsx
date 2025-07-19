@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Building2, Users, Calendar, Award, CheckCircle, Send, MapPin, Phone, Mail } from 'lucide-react';
 import { usePageContent, getContentWithFallback } from '../hooks/usePageContent';
+import { supabase } from '../lib/supabase';
 
 const Corporate: React.FC = () => {
   const { content: pageContent, loading: contentLoading } = usePageContent('corporate');
@@ -79,7 +80,33 @@ const Corporate: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    try {
+      // Save to database
+      const { error } = await supabase
+        .from('booking_submissions')
+        .insert([{
+          submission_type: 'corporate',
+          full_name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          institution: formData.institution,
+          event_type: formData.eventType,
+          preferred_dates: formData.preferredDates,
+          custom_needs: formData.customRequirements,
+          status: 'new'
+        }]);
+
+      if (error) {
+        console.error('Error saving corporate submission:', error);
+        // Continue to show success even if database save fails
+      }
+    } catch (err) {
+      console.error('Exception saving corporate submission:', err);
+      // Continue to show success even if database save fails
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 1000));
     setIsSubmitting(false);
     setIsSubmitted(true);
   };

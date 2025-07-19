@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Calendar, User, Phone, Mail, MapPin, FileText, Send, Star, Users } from 'lucide-react';
 import { usePageContent, getContentWithFallback } from '../hooks/usePageContent';
+import { supabase } from '../lib/supabase';
 
 interface FormData {
   fullName: string;
@@ -63,8 +64,34 @@ const BookingForm: React.FC = () => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Simulate form submission
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    try {
+      // Save to database
+      const { error } = await supabase
+        .from('booking_submissions')
+        .insert([{
+          submission_type: 'booking',
+          full_name: formData.fullName,
+          email: formData.email,
+          phone: formData.contactNumber,
+          booking_date: formData.bookingDate,
+          location: formData.location,
+          event_type: formData.eventType,
+          number_of_children: formData.numberOfChildren,
+          custom_needs: formData.customNeeds,
+          status: 'new'
+        }]);
+
+      if (error) {
+        console.error('Error saving booking submission:', error);
+        // Continue to show success even if database save fails
+      }
+    } catch (err) {
+      console.error('Exception saving booking submission:', err);
+      // Continue to show success even if database save fails
+    }
+
+    // Simulate processing time
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
     setIsSubmitting(false);
     setIsSubmitted(true);

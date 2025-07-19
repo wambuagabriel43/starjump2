@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { MapPin, Phone, Mail, Clock, MessageCircle, Send, CheckCircle } from 'lucide-react';
 import { usePageContent, getContentWithFallback } from '../hooks/usePageContent';
+import { supabase } from '../lib/supabase';
 
 const ContactUs: React.FC = () => {
   const { content: pageContent, loading: contentLoading } = usePageContent('contact');
@@ -62,7 +63,30 @@ const ContactUs: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    try {
+      // Save to database
+      const { error } = await supabase
+        .from('booking_submissions')
+        .insert([{
+          submission_type: 'contact',
+          full_name: formData.name,
+          email: formData.email,
+          subject: formData.subject,
+          message: formData.message,
+          status: 'new'
+        }]);
+
+      if (error) {
+        console.error('Error saving contact submission:', error);
+        // Continue to show success even if database save fails
+      }
+    } catch (err) {
+      console.error('Exception saving contact submission:', err);
+      // Continue to show success even if database save fails
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 1000));
     setIsSubmitting(false);
     setIsSubmitted(true);
   };

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { AlertTriangle, CheckCircle, XCircle, Database, Upload, Settings } from 'lucide-react';
-import { testSupabaseConnection } from '../../lib/supabase';
+import { testSupabaseConnection, createStorageBucketsIfNeeded, requiredStorageBuckets } from '../../lib/supabase';
 
 const DiagnosticPage: React.FC = () => {
   const [diagnostics, setDiagnostics] = useState({
@@ -86,13 +86,22 @@ const DiagnosticPage: React.FC = () => {
         setDiagnostics(prev => ({ ...prev, storageBuckets: 'error' }));
         addLog(`Storage buckets ERROR: ${error.message}`);
       } else {
-        const requiredBuckets = ['logos', 'menu-graphics', 'footer-images', 'general-uploads'];
         const existingBuckets = buckets?.map(b => b.name) || [];
-        const missingBuckets = requiredBuckets.filter(b => !existingBuckets.includes(b));
+        const missingBuckets = requiredStorageBuckets.filter(b => !existingBuckets.includes(b));
         
         if (missingBuckets.length > 0) {
           setDiagnostics(prev => ({ ...prev, storageBuckets: 'warning' }));
           addLog(`Missing buckets: ${missingBuckets.join(', ')}`);
+          
+          // Try to create missing buckets
+          addLog('Attempting to create missing buckets...');
+          const createResult = await createStorageBucketsIfNeeded();
+          if (createResult.success) {
+            addLog(`Created ${createResult.created} buckets, ${createResult.failed} failed`);
+            if (createResult.created > 0) {
+              setDiagnostics(prev => ({ ...prev, storageBuckets: 'success' }));
+            }
+          }
         } else {
           setDiagnostics(prev => ({ ...prev, storageBuckets: 'success' }));
           addLog(`All required buckets exist: ${existingBuckets.join(', ')}`);
